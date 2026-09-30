@@ -1,0 +1,46 @@
+# Secrets; examples must contain placeholders only
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.pem
+*.key
+*.p8
+*.p12
+*.pfx
+
+# Python environments and generated files
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+build/
+dist/
+
+# Private local application data and scratch work
+/.local/
+/work/
+/vaults/
+*.sqlite
+*.sqlite3
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
+*.sqlite3-journal
+*.sqlite3-wal
+*.sqlite3-shm
+*.log
+
+# macOS metadata
+.DS_Store
