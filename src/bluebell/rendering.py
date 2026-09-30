@@ -7,7 +7,7 @@ from urllib.parse import quote, unquote, urlsplit
 
 from markdown_it import MarkdownIt
 from mdit_py_plugins.tasklists import tasklists_plugin
-from PySide6.QtCore import QByteArray, QBuffer, QIODevice, Qt
+from PySide6.QtCore import QByteArray, QBuffer, QIODevice, Qt, QUrl
 from PySide6.QtGui import QImage, QImageReader, QTextDocument
 from PySide6.QtWidgets import QTextBrowser
 
@@ -133,7 +133,7 @@ class SafePreview(QTextBrowser):
         if kind != QTextDocument.ImageResource or name.scheme() != "vault-image" or self.vault is None:
             return QImage()
         try:
-            relative = unquote(name.toString().split(":", 1)[1])
+            relative = unquote(name.toString(QUrl.FullyEncoded).split(":", 1)[1])
             if PurePosixPath(relative).suffix.lower() not in RASTER_TYPES:
                 return QImage()
             data = self.vault.read(relative, limit=MAX_IMAGE_BYTES).data

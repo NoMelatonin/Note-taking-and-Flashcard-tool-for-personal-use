@@ -4,7 +4,7 @@ A Python desktop application for local Markdown notes, with linked notes and spa
 
 ## Current status
 
-Milestone 1 is being implemented as **Bluebell**, a native Python/PySide6 application. The explorer, real filesystem actions, Markdown editor/reading view and safe autosave are verified on macOS. See [PLAN.md](PLAN.md) for actual progress.
+Milestone 1 is being implemented as **Bluebell**, a native Python/PySide6 application. The explorer, Markdown editor/reading view, safe autosave, search and note links are verified on macOS. Final usability review is in progress; see [PLAN.md](PLAN.md).
 
 ## Setup, launch and tests
 
@@ -53,4 +53,6 @@ Edit ordinary Markdown, switch to **Read** for formatted text, and use **Find**,
 
 If another editor changes a note, Bluebell reloads a clean note or pauses autosave when local edits conflict. **Reload from disk** explicitly discards local edits; **Save a conflict copy…** preserves both. If a note disappears, save a new copy; the old path is never recreated automatically. A failed write keeps your text and blocks leaving until resolved/cancelled.
 
-Reading escapes raw HTML, permits only vault-contained raster images, and never fetches remote/data images or executes scripts. Note text is limited to 8 MiB; image input to 20 MiB/24 million pixels. All symlinks are refused. Atomic save/version checks reduce conflict risk but cannot eliminate the concurrent check/replace gap. Search/link navigation follows in step 4. Graphs, AI, flashcards and distribution remain later milestones.
+Search names and contents with **Search notes…** or Cmd/Ctrl+Shift+F. Results include paths and context. Clear search to return to the folder tree. `[[Note]]`, `[[folder/Note|Label]]` and relative `[Label](../Note.md)` links navigate on a reading-view click or Cmd/Ctrl-click in source. Bare duplicate names are reported as ambiguous. External tree changes normally appear after the 750 ms poll; **Refresh** is the fallback.
+
+Reading escapes raw HTML, permits only vault-contained raster images, and never fetches remote/data images or executes scripts. HTTP/HTTPS links open in the default browser only when clicked. Note text is limited to 8 MiB; image input to 20 MiB/24 million pixels. All symlinks are refused. Atomic save/version checks reduce conflict risk but cannot eliminate the concurrent check/replace gap. Graphs, AI, flashcards and distribution remain later milestones.

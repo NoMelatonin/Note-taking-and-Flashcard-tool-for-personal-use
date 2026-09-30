@@ -1,6 +1,6 @@
 # Implementation plan
 
-Status: steps 1–3 verified on macOS, 30 September 2026; steps 4–5 in progress.
+Status: steps 1–4 verified on macOS, 30 September 2026; final polish/review in progress.
 
 ## Milestone 1: note-taking system
 
@@ -41,6 +41,16 @@ Follow `docs/MILESTONE_1.md`. Complete the following in order, keeping each step
 - Verified: 53 passed, 1 opt-in native Trash test skipped, both headless and native Cocoa. Native Edit/Read screenshots reviewed (`work/explorer.png`, `work/reading.png`). Tests cover restart/close, switch flush, write failure, cancelled transitions, conflict copies, external removal, BOM/newlines/permissions, source list behavior, rendered tasks/tables, raw HTML, remote/data/file resources and a disguised SVG.
 - Try the demo from step 2: edit **Welcome.md**, wait for **Saved**, switch to **Read**, try **Find**, then reopen the app. To test conflicts, edit a synthetic note in both Bluebell and a separate editor before the idle save; use **Save a conflict copy…**.
 - New note text is UTF-8. Files above 8 MiB are refused without rewriting; raster resources are capped at 20 MiB/24 million pixels. Scripts/raw HTML and all automatic external resources are blocked. Qt Widgets, not a web browser, renders the note.
+
+### Step 4 — navigation and external updates
+
+- Literal case-insensitive filename/content search with paths and context around the match; up to 200 results, skipped-note feedback and a labelled overlay for current unsaved text. Search/scan run in Qt workers; stale jobs cannot replace a newer query or vault.
+- Wiki links support unambiguous names, vault-root paths, aliases and optional `.md`. Ordinary relative `.md` links may use parent directories while remaining inside the vault. Missing/ambiguous/unsafe links report an error and never create a note.
+- Links work through an actual reading-view click and Cmd/Ctrl-click in source. HTTP/HTTPS is dispatched to the default browser only on an explicit click; other schemes are refused.
+- External tree additions/renames/removals and active-document changes poll every 750 ms. File stamps also invalidate active search after outside content edits. Manual **Refresh** remains available; delayed jobs from earlier vaults/operations are ignored.
+- Verified: full headless suite — 66 passed, 1 optional native Trash test skipped before the final click test was added. All 12 native navigation/preview cases passed after correcting a Qt test-call argument; the actual click case was rerun successfully. Creation/rename/removal refresh met 1.5-second test deadlines. Native image screenshot reviewed (`work/reading-image.png`).
+- Try: search for `thought` in the demo, clear search to return to the tree, and click **your first thought** in Welcome's reading view. Create/rename a synthetic `.md` file in Finder or another editor; the tree updates automatically. Duplicate note basenames deliberately produce an ambiguity message.
+- No graph/backlink database, AI, flashcards, networking or later-milestone implementation added.
 
 After each step, report what is usable, what was verified and how the user can try it. Continue the scoped work unless the user asks to pause or a decision is genuinely required. Keep completed steps and actual validation results recorded here; do not mark planned work complete.
 

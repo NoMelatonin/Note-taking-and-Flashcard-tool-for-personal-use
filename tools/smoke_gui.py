@@ -26,6 +26,9 @@ def verify():
     window.set_mode("read")
     app.processEvents()
     assert window.grab().save(str(root / "work" / "reading.png"))
+    window.preview.verticalScrollBar().setValue(window.preview.verticalScrollBar().maximum())
+    app.processEvents()
+    assert window.grab().save(str(root / "work" / "reading-image.png"))
     window.close()
     app.quit()
 

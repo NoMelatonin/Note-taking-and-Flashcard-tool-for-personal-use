@@ -31,6 +31,7 @@ class ConflictError(VaultError):
 class Entry:
     path: str
     folder: bool
+    stamp: tuple = ()
 
 
 @dataclass(frozen=True)
@@ -163,7 +164,8 @@ class Vault:
                                     entries.append(Entry(child, True))
                                     pending.append(child)
                             elif item.is_file(follow_symlinks=False) and item.name.lower().endswith(".md"):
-                                entries.append(Entry(child, False))
+                                info = item.stat(follow_symlinks=False)
+                                entries.append(Entry(child, False, (info.st_mtime_ns, info.st_size, info.st_ino)))
             except OSError as error:
                 if relative == ".":
                     raise

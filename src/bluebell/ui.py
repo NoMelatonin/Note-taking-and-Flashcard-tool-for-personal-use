@@ -1,21 +1,25 @@
 """Native desktop UI over a filesystem vault and one active document."""
 
 from pathlib import Path, PurePosixPath
+from threading import Event
+from urllib.parse import unquote, urlsplit
 
-from PySide6.QtCore import Qt, QTimer
-from PySide6.QtGui import QKeySequence, QShortcut, QTextCursor, QTextDocument
+from PySide6.QtCore import Qt, QThreadPool, QTimer, QUrl
+from PySide6.QtGui import QDesktopServices, QKeySequence, QShortcut, QTextCursor, QTextDocument
 from PySide6.QtWidgets import (
     QButtonGroup, QDialog, QDialogButtonBox, QFileDialog, QFrame, QHBoxLayout,
-    QLabel, QLineEdit, QMainWindow, QMenu, QMessageBox, QPushButton, QSplitter,
+    QLabel, QLineEdit, QListWidget, QListWidgetItem, QMainWindow, QMenu, QMessageBox, QPushButton, QSplitter,
     QStackedWidget, QTreeWidget, QTreeWidgetItem, QVBoxLayout, QWidget,
 )
 
 from bluebell.document import Document
 from bluebell.editor import MarkdownEditor
+from bluebell.navigation import resolve_link, search_notes
 from bluebell.rendering import SafePreview
 from bluebell.settings import load_settings, save_settings
 from bluebell.theme import STYLE
 from bluebell.vault import ConflictError, Vault, VaultError
+from bluebell.workers import Work
 
 
 def plain_label(text="", **kwargs):
@@ -73,6 +77,16 @@ class MainWindow(QMainWindow):
         self.items = {}
         self.loading = False
         self.mode = "edit"
+        self.closed = False
+        self.last_scan = None
+        self.vault_epoch = 0
+        self.tree_generation = 0
+        self.scan_busy = False
+        self.search_generation = 0
+        self.search_cancel = Event()
+        self.jobs = set()
+        self.pool = QThreadPool(self)
+        self.pool.setMaxThreadCount(2)
         self.setWindowTitle("Bluebell · local Markdown notes")
         self.resize(1120, 760)
         self.setMinimumSize(760, 500)
@@ -83,7 +97,11 @@ class MainWindow(QMainWindow):
         self.autosave.timeout.connect(self.save_document)
         self.external_timer = QTimer(self)
         self.external_timer.setInterval(750)
-        self.external_timer.timeout.connect(self.check_external)
+        self.external_timer.timeout.connect(self.tick)
+        self.search_timer = QTimer(self)
+        self.search_timer.setSingleShot(True)
+        self.search_timer.setInterval(200)
+        self.search_timer.timeout.connect(self.run_search)
         self._build_sidebar()
         self._build_content()
         self._build_shortcuts()
@@ -116,6 +134,18 @@ class MainWindow(QMainWindow):
         self.open_button = QPushButton("Open vault…")
         self.open_button.clicked.connect(self.choose_vault)
         side.addWidget(self.open_button)
+        search_row = QHBoxLayout()
+        self.search_text = QLineEdit()
+        self.search_text.setPlaceholderText("Search notes…")
+        self.search_text.setClearButtonEnabled(True)
+        self.search_text.setAccessibleName("Search notes across the vault")
+        self.search_text.textChanged.connect(self.schedule_search)
+        self.search_text.returnPressed.connect(self.run_search)
+        search_row.addWidget(self.search_text, 1)
+        self.search_button = QPushButton("Search")
+        self.search_button.clicked.connect(self.focus_search)
+        search_row.addWidget(self.search_button)
+        side.addLayout(search_row)
         row = QHBoxLayout()
         self.new_note_button = QPushButton("New note")
         self.new_folder_button = QPushButton("New folder")
@@ -131,7 +161,18 @@ class MainWindow(QMainWindow):
         self.tree.itemActivated.connect(self.tree_clicked)
         self.tree.setContextMenuPolicy(Qt.CustomContextMenu)
         self.tree.customContextMenuRequested.connect(self.tree_menu)
-        side.addWidget(self.tree, 1)
+        self.explorer_views = QStackedWidget()
+        self.explorer_views.addWidget(self.tree)
+        self.search_results = QListWidget()
+        self.search_results.setAccessibleName("Vault search results")
+        self.search_results.itemClicked.connect(self.open_search_result)
+        self.search_results.itemActivated.connect(self.open_search_result)
+        self.explorer_views.addWidget(self.search_results)
+        self.search_summary = plain_label("", objectName="hint")
+        self.search_summary.setWordWrap(True)
+        self.search_summary.hide()
+        side.addWidget(self.search_summary)
+        side.addWidget(self.explorer_views, 1)
         row = QHBoxLayout()
         self.rename_button = QPushButton("Rename")
         self.trash_button = QPushButton("Trash")
@@ -265,6 +306,7 @@ class MainWindow(QMainWindow):
             (QKeySequence.Bold, lambda: self.format_source("**")),
             (QKeySequence.Italic, lambda: self.format_source("*")),
             (QKeySequence("Ctrl+E"), lambda: self.set_mode("read" if self.mode == "edit" else "edit")),
+            (QKeySequence("Ctrl+Shift+F"), self.focus_search),
         ]
         for sequence, action in actions:
             QShortcut(sequence, self, activated=action)
@@ -284,6 +326,14 @@ class MainWindow(QMainWindow):
             self.show_error("Could not open vault", error)
             return False
         self.vault, self.vault_path = vault, vault.root
+        self.vault_epoch += 1
+        self.tree_generation += 1
+        self.scan_busy = False
+        self.last_scan = None
+        self.search_text.clear()
+        self.search_results.clear()
+        self.explorer_views.setCurrentIndex(0)
+        self.search_summary.hide()
         self.document, self.active_path = None, None
         self.items = {}
         self._set_editor_text("")
@@ -308,7 +358,7 @@ class MainWindow(QMainWindow):
         return True
 
     def _enable_vault_controls(self, enabled):
-        for button in (self.new_note_button, self.new_folder_button, self.rename_button, self.trash_button, self.refresh_button):
+        for button in (self.new_note_button, self.new_folder_button, self.rename_button, self.trash_button, self.refresh_button, self.search_button, self.search_text):
             button.setEnabled(enabled)
 
     def show_error(self, title, error):
@@ -318,10 +368,14 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage(str(error))
 
     def selected_path(self):
+        if self.search_text.text() and self.search_results.currentItem():
+            return self.search_results.currentItem().data(Qt.UserRole)
         item = self.tree.currentItem()
         return item.data(0, Qt.UserRole) if item else "."
 
     def destination(self):
+        if self.search_text.text() and self.search_results.currentItem():
+            return str(PurePosixPath(self.selected_path()).parent)
         item = self.tree.currentItem()
         if item is None:
             return "."
@@ -329,6 +383,7 @@ class MainWindow(QMainWindow):
         return path if item.data(0, Qt.UserRole + 1) else str(PurePosixPath(path).parent)
 
     def apply_tree(self, scan):
+        self.last_scan = scan
         expanded = {path for path, item in self.items.items() if item.isExpanded()}
         selected = self.selected_path()
         self.tree.clear()
@@ -354,12 +409,16 @@ class MainWindow(QMainWindow):
         if scan.warnings:
             self.statusBar().showMessage(f"{len(scan.warnings)} inaccessible or symlink entries skipped; hover the vault name for details.")
             self.vault_label.setToolTip(str(self.vault.root) + "\n" + "\n".join(scan.warnings[:20]))
+        else:
+            self.vault_label.setToolTip(str(self.vault.root))
 
     def refresh_tree(self):
         if self.vault:
             try:
+                self.tree_generation += 1
                 self.apply_tree(self.vault.scan())
                 self.check_external()
+                self.schedule_search()
             except (OSError, VaultError) as error:
                 self.show_error("Could not refresh vault", error)
 
@@ -373,6 +432,94 @@ class MainWindow(QMainWindow):
             self.tree.setCurrentItem(item)
             self.tree.scrollToItem(item)
 
+    def _job(self, operation, callback):
+        worker = Work(operation)
+        self.jobs.add(worker)
+        def finished(result):
+            self.jobs.discard(worker)
+            if not self.closed:
+                callback(result)
+        worker.signals.finished.connect(finished, Qt.QueuedConnection)
+        self.pool.start(worker)
+
+    def tick(self):
+        self.check_external()
+        if not self.vault or self.scan_busy or self.closed:
+            return
+        self.scan_busy = True
+        vault, epoch, generation = self.vault, self.vault_epoch, self.tree_generation
+        def finished(result):
+            if epoch != self.vault_epoch:
+                return
+            self.scan_busy = False
+            if generation != self.tree_generation:
+                return
+            if result.error:
+                self.statusBar().showMessage("Vault refresh failed: " + result.error + ". Use Refresh or reopen the vault.")
+            elif result.value != self.last_scan:
+                self.apply_tree(result.value)
+                self.schedule_search()
+        self._job(vault.scan, finished)
+
+    def focus_search(self):
+        if self.vault:
+            self.search_text.setFocus()
+            self.search_text.selectAll()
+            if self.search_text.text():
+                self.run_search()
+
+    def schedule_search(self):
+        self.search_generation += 1
+        self.search_cancel.set()
+        self.search_cancel = Event()
+        if not self.search_text.text():
+            self.search_timer.stop()
+            self.search_summary.hide()
+            self.explorer_views.setCurrentIndex(0)
+            self.search_results.clear()
+        elif self.vault:
+            self.search_summary.setText("Searching…")
+            self.search_summary.show()
+            self.explorer_views.setCurrentIndex(1)
+            self.search_timer.start()
+
+    def run_search(self):
+        self.search_timer.stop()
+        query = self.search_text.text()
+        if not self.vault or not query:
+            return
+        self.search_cancel.set()
+        self.search_cancel = Event()
+        cancelled = self.search_cancel
+        self.search_generation += 1
+        generation, epoch, vault = self.search_generation, self.vault_epoch, self.vault
+        entries = self.last_scan.entries if self.last_scan else ()
+        overlay = {self.document.relative: self.document.text} if self.document and self.document.dirty else {}
+        def finished(result):
+            if epoch != self.vault_epoch or generation != self.search_generation:
+                return
+            self.search_results.clear()
+            if result.error:
+                self.search_summary.setText("Search failed: " + result.error)
+                return
+            page = result.value
+            for match in page.results:
+                text = match.path + (" · unsaved" if match.unsaved else "") + "\n" + match.context
+                item = QListWidgetItem(text)
+                item.setData(Qt.UserRole, match.path)
+                item.setToolTip(match.path + "\n" + match.context)
+                self.search_results.addItem(item)
+            summary = f"{len(page.results)} result{'s' if len(page.results) != 1 else ''}"
+            if page.limited:
+                summary += " shown · narrow your search"
+            if page.skipped:
+                summary += f" · {len(page.skipped)} unreadable notes skipped"
+            self.search_summary.setText(summary if page.results else "No matching notes." + (f" {len(page.skipped)} unreadable notes skipped." if page.skipped else ""))
+        self._job(lambda: search_notes(vault, query, entries=entries, overlay=overlay, cancelled=cancelled.is_set), finished)
+
+    def open_search_result(self, item):
+        self.open_note(item.data(Qt.UserRole))
+
     def create_entry(self, folder=False):
         if not self.vault or not self.flush_pending():
             return
@@ -380,10 +527,12 @@ class MainWindow(QMainWindow):
         dialog = NameDialog(self, "New folder" if folder else "New Markdown note", destination,
                             lambda name: self.vault.create(destination, name, folder=folder))
         if dialog.exec() == QDialog.Accepted:
+            self.search_text.clear()
             self.refresh_tree()
             self.select_path(dialog.result_path)
             if not folder:
                 self.open_note(dialog.result_path)
+                self.set_mode("edit")
 
     def tree_clicked(self, item, column=0):
         if not item.data(0, Qt.UserRole + 1):
@@ -457,6 +606,8 @@ class MainWindow(QMainWindow):
         self.save_state.setText("Saved")
         if not self.document.paused:
             self.notice.hide()
+        if self.search_text.text():
+            self.schedule_search()
         return True
 
     def _show_document_notice(self):
@@ -602,10 +753,38 @@ class MainWindow(QMainWindow):
                 self.statusBar().showMessage("No matches in this note.")
 
     def source_link(self, target, wiki):
-        self.statusBar().showMessage("Internal link navigation arrives in step 4.")
+        self.navigate_link(target, wiki=wiki)
 
     def preview_link(self, url):
-        self.statusBar().showMessage("Link navigation arrives in step 4.")
+        scheme = url.scheme().lower()
+        if scheme in {"bluebell-wiki", "bluebell-note"}:
+            target = unquote(url.toString(QUrl.FullyEncoded).split(":", 1)[1])
+            self.navigate_link(target, wiki=scheme == "bluebell-wiki")
+        elif scheme in {"http", "https"}:
+            self.open_external(url)
+        else:
+            self.show_error("Link blocked", "Only internal Markdown notes and clicked HTTP/HTTPS links can be opened.")
+
+    def open_external(self, url):
+        if url.scheme().lower() not in {"http", "https"} or not url.isValid() or not url.host():
+            self.show_error("Link blocked", "That is not a valid HTTP/HTTPS link.")
+        elif not QDesktopServices.openUrl(url):
+            self.show_error("Could not open browser", "Your default browser could not open this link.")
+
+    def navigate_link(self, target, *, wiki=False):
+        if not self.document:
+            return False
+        try:
+            parsed = urlsplit(target) if not wiki else None
+            if parsed and parsed.scheme in {"http", "https"}:
+                self.open_external(QUrl(target))
+                return True
+            relative = resolve_link(self.vault, self.document.relative, target, wiki=wiki,
+                                    entries=self.last_scan.entries if self.last_scan else None)
+        except ValueError as error:
+            self.show_error("Could not follow note link", error)
+            return False
+        return self.open_note(relative)
 
     def rename_entry(self):
         if not self.vault or self.selected_path() == "." or not self.flush_pending():
@@ -616,6 +795,7 @@ class MainWindow(QMainWindow):
                             hint="Links to renamed paths may need updating. Automatic link rewriting comes later.")
         if dialog.exec() == QDialog.Accepted:
             new = dialog.result_path
+            self.search_text.clear()
             if self.active_path and (self.active_path == old or self.active_path.startswith(old + "/")):
                 self.active_path = new + self.active_path[len(old):]
                 self.document.relative = self.active_path
@@ -627,7 +807,7 @@ class MainWindow(QMainWindow):
         if not self.vault or self.selected_path() == "." or not self.flush_pending():
             return
         relative = self.selected_path()
-        folder = self.tree.currentItem().data(0, Qt.UserRole + 1)
+        folder = self.items[relative].data(0, Qt.UserRole + 1) if relative in self.items else False
         message = f'Move "{relative}" to the operating system\'s Trash?'
         if folder:
             message += " All of this folder's contents will also move to Trash."
@@ -669,4 +849,7 @@ class MainWindow(QMainWindow):
             return
         self.autosave.stop()
         self.external_timer.stop()
+        self.search_timer.stop()
+        self.search_cancel.set()
+        self.closed = True
         event.accept()
