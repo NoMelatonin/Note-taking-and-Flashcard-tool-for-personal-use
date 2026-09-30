@@ -1,6 +1,6 @@
 # Implementation plan
 
-Status: step 1 verified on macOS, 30 September 2026; steps 2–5 in progress.
+Status: steps 1–2 verified on macOS, 30 September 2026; steps 3–5 in progress.
 
 ## Milestone 1: note-taking system
 
@@ -22,6 +22,15 @@ Follow `docs/MILESTONE_1.md`. Complete the following in order, keeping each step
 - Try: `.venv/bin/python -m bluebell --no-restore`, then **Open vault…**. Folder actions/editor arrive in step 2/3.
 - Sandbox limitation: Cocoa/clipboard services require a native, unsandboxed launch in this development environment. Headless CI can use `QT_QPA_PLATFORM=offscreen`; it does not verify a native launch.
 - This managed worktree started at the initial commit. Requirements were copied from the original checkout's untracked documents; the original checkout and user files were not edited.
+
+### Step 2 — vault explorer and filesystem actions
+
+- Real nested folder tree, note/folder creation, contextual destinations, Unicode names, inline dialog errors, rename and confirmed OS Trash. Notes currently open as read-only source until step 3.
+- Name validation rejects traversal, hidden creation names, reserved platform names and case/Unicode-normalization collisions. All symlinks are skipped, including links within the vault. macOS file operations use directory descriptors/no-follow opens, and rename uses exclusive `renameatx_np` rather than overwriting an existing destination.
+- Verified: `BLUEBELL_TEST_NATIVE_TRASH=1 .venv/bin/python -m pytest` — 29 passed against native Cocoa. The native Trash test moved one uniquely named synthetic folder and read back its preserved contents from macOS Trash. Failure, duplicate and cancellation tests preserve originals.
+- Native explorer screenshot reviewed: `work/explorer.png`.
+- Try: `.venv/bin/python tools/make_demo_vault.py`, then `.venv/bin/python -m bluebell --vault work/demo-vault`. Select root/folder/note; use **New folder**, **New note**, **Rename**, **Trash** or the context menu. The demo generator leaves an existing demo untouched.
+- Security limitation: Trash is an OS path-based API, so ancestor revalidation cannot eliminate a concurrent malicious directory replacement. Descriptor-based file operations also cannot defend against another process moving an already-open directory outside the vault. See final security notes as implementation progresses.
 
 After each step, report what is usable, what was verified and how the user can try it. Continue the scoped work unless the user asks to pause or a decision is genuinely required. Keep completed steps and actual validation results recorded here; do not mark planned work complete.
 

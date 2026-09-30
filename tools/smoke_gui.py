@@ -6,6 +6,7 @@ from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QApplication
 
 from bluebell.ui import MainWindow
+from make_demo_vault import create_demo_vault
 
 root = Path(__file__).resolve().parents[1]
 (root / "work").mkdir(exist_ok=True)
@@ -18,6 +19,10 @@ def verify():
     assert window.isVisible()
     print(f"Native GUI platform: {app.platformName()}", flush=True)
     assert window.grab().save(str(root / "work" / "empty-state.png"))
+    assert window.open_vault(create_demo_vault())
+    assert window.open_note("Welcome.md")
+    app.processEvents()
+    assert window.grab().save(str(root / "work" / "explorer.png"))
     window.close()
     app.quit()
 

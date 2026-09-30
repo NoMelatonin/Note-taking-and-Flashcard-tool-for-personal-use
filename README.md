@@ -4,7 +4,7 @@ A Python desktop application for local Markdown notes, with linked notes and spa
 
 ## Current status
 
-Milestone 1 is being implemented as **Bluebell**, a native Python/PySide6 application. Step 1 (window and vault chooser) has launched and been visually verified on macOS. See [PLAN.md](PLAN.md) for actual progress.
+Milestone 1 is being implemented as **Bluebell**, a native Python/PySide6 application. The window, vault explorer and real filesystem actions have been verified on macOS. See [PLAN.md](PLAN.md) for actual progress.
 
 ## Setup, launch and tests
 
@@ -18,6 +18,15 @@ python3 -m venv .venv
 ```
 
 Choose **Open vault…** to select an existing folder. Installation downloads dependencies once; the app itself needs no network. `--vault PATH` opens a folder directly. `python tools/smoke_gui.py` briefly launches the native app and saves a screenshot under ignored `work/`.
+
+Try an isolated example:
+
+```sh
+.venv/bin/python tools/make_demo_vault.py
+.venv/bin/python -m bluebell --vault work/demo-vault
+```
+
+Select a folder to create inside it, or a note to create in its parent. Root/no selection creates at the vault root. Rename warns about links; Trash asks for confirmation and never falls back to permanent deletion. All symlinks are skipped. Existing non-Markdown files remain untouched.
 
 For headless tests, use `QT_QPA_PLATFORM=offscreen .venv/bin/python -m pytest`. A terminal with normal macOS GUI access is required to verify the native window. Windows/Linux packaging and execution are unverified.
 
@@ -40,4 +49,4 @@ Notes live as ordinary `.md` files in a vault folder chosen by the user. Develop
 
 The first milestone requires no AI service, API key or `.env` file. If later work introduces credentials, keep them out of Git. `.gitignore` does not remove already tracked secrets.
 
-Until the remaining steps are complete, only the vault chooser/window are available. Graphs, AI, flashcards and distribution remain later milestones.
+Until step 3, selected notes show read-only Markdown source. Editing, saving and navigation follow next. Graphs, AI, flashcards and distribution remain later milestones.
