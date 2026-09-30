@@ -1,6 +1,6 @@
 # Implementation plan
 
-Status: steps 1–2 verified on macOS, 30 September 2026; steps 3–5 in progress.
+Status: steps 1–3 verified on macOS, 30 September 2026; steps 4–5 in progress.
 
 ## Milestone 1: note-taking system
 
@@ -31,6 +31,16 @@ Follow `docs/MILESTONE_1.md`. Complete the following in order, keeping each step
 - Native explorer screenshot reviewed: `work/explorer.png`.
 - Try: `.venv/bin/python tools/make_demo_vault.py`, then `.venv/bin/python -m bluebell --vault work/demo-vault`. Select root/folder/note; use **New folder**, **New note**, **Rename**, **Trash** or the context menu. The demo generator leaves an existing demo untouched.
 - Security limitation: Trash is an OS path-based API, so ancestor revalidation cannot eliminate a concurrent malicious directory replacement. Descriptor-based file operations also cannot defend against another process moving an already-open directory outside the vault. See final security notes as implementation progresses.
+
+### Step 3 — Markdown writing, reading and saving
+
+- Editable monospace source, Edit/Read controls, Markdown tables/tasks/nested lists/code, safe local raster images, source formatting, list continuation/indentation, undo/redo and in-note find.
+- Idle autosave after 500 ms; explicit Save and platform Save shortcut; pending edits flush before note/vault switching, rename, Trash and normal close. Save state is textual. Failed saves retain editor text and pause automatic retries.
+- Same-directory temporary files, fsync and atomic replacement preserve practical permissions, UTF-8 BOM and existing line endings. Clean opening never writes. Content hashes plus inode/mtime detect external edits, including a same-size edit with restored mtime; a second check covers changes during staging. The final check/replace gap still exists with concurrent writers.
+- Conflicts offer explicit reload/discard or a new conflict copy; removed paths are never silently recreated. Save-as uses a validated single name/destination inside the vault.
+- Verified: 53 passed, 1 opt-in native Trash test skipped, both headless and native Cocoa. Native Edit/Read screenshots reviewed (`work/explorer.png`, `work/reading.png`). Tests cover restart/close, switch flush, write failure, cancelled transitions, conflict copies, external removal, BOM/newlines/permissions, source list behavior, rendered tasks/tables, raw HTML, remote/data/file resources and a disguised SVG.
+- Try the demo from step 2: edit **Welcome.md**, wait for **Saved**, switch to **Read**, try **Find**, then reopen the app. To test conflicts, edit a synthetic note in both Bluebell and a separate editor before the idle save; use **Save a conflict copy…**.
+- New note text is UTF-8. Files above 8 MiB are refused without rewriting; raster resources are capped at 20 MiB/24 million pixels. Scripts/raw HTML and all automatic external resources are blocked. Qt Widgets, not a web browser, renders the note.
 
 After each step, report what is usable, what was verified and how the user can try it. Continue the scoped work unless the user asks to pause or a decision is genuinely required. Keep completed steps and actual validation results recorded here; do not mark planned work complete.
 

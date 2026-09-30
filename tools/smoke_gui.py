@@ -23,6 +23,9 @@ def verify():
     assert window.open_note("Welcome.md")
     app.processEvents()
     assert window.grab().save(str(root / "work" / "explorer.png"))
+    window.set_mode("read")
+    app.processEvents()
+    assert window.grab().save(str(root / "work" / "reading.png"))
     window.close()
     app.quit()
 

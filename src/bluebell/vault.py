@@ -11,6 +11,7 @@ import re
 import stat
 import sys
 import unicodedata
+import uuid
 
 from send2trash import send2trash
 
@@ -172,6 +173,8 @@ class Vault:
         return Scan(tuple(sorted(entries, key=lambda entry: (entry.path.count('/'), not entry.folder, name_key(entry.path)))), tuple(warnings))
 
     def create(self, parent: str, name: str, *, folder: bool = False, content: bytes = b"") -> str:
+        if not folder and len(content) > MAX_NOTE_BYTES:
+            raise VaultError("The note exceeds the 8 MiB safety limit. Your text is retained.")
         name = validate_name(name, note=not folder)
         relative = str(self._relative(parent) / name)
         with self.directory(parent) as (descriptor, path):
@@ -253,6 +256,58 @@ class Vault:
             else:
                 raise VaultError("Safe exclusive rename is unavailable on this system.")
         return str(old.parent / name)
+
+    def atomic_write(self, relative: str, data: bytes, expected: Snapshot) -> Snapshot:
+        """Same-directory temporary + atomic replacement, with two version checks.
+
+        Another writer can still modify the note between the last check and replace.
+        These checks detect conflicts; they are not a compare-and-swap transaction.
+        """
+        if len(data) > MAX_NOTE_BYTES:
+            raise VaultError("The note exceeds the 8 MiB safety limit. Your text is still in the editor.")
+        path = self._relative(relative)
+        if not path.name.lower().endswith(".md"):
+            raise VaultError("Only Markdown notes can be saved.")
+        before = self.read(relative)
+        if before.version != expected.version:
+            raise ConflictError("This note changed on disk. Reload it or save a conflict copy.")
+        with self.directory(str(path.parent)) as (descriptor, parent):
+            temporary = ".bluebell-" + uuid.uuid4().hex + ".tmp"
+            flags = os.O_RDWR | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0)
+            handle = os.open(temporary, flags, 0o600, dir_fd=descriptor) if descriptor is not None else os.open(parent / temporary, flags, 0o600)
+            replaced = False
+            try:
+                with os.fdopen(handle, "w+b") as stream:
+                    stream.write(data)
+                    stream.flush()
+                    if hasattr(os, "fchmod"):
+                        os.fchmod(stream.fileno(), before.mode & 0o777)
+                    else:
+                        os.chmod(parent / temporary, before.mode & 0o777)
+                    os.fsync(stream.fileno())
+                    # Check after staging as well as before; never recreate a missing note.
+                    if self.read(relative).version != expected.version:
+                        raise ConflictError("This note changed while saving. Save a conflict copy.")
+                    if descriptor is not None:
+                        os.replace(temporary, path.name, src_dir_fd=descriptor, dst_dir_fd=descriptor)
+                    else:
+                        self.resolve(relative)
+                        os.replace(parent / temporary, parent / path.name)
+                    replaced = True
+                    info = os.fstat(stream.fileno())
+                    if descriptor is not None:
+                        try:
+                            os.fsync(descriptor)
+                        except OSError as error:
+                            if error.errno not in {errno.EINVAL, errno.ENOTSUP, errno.EBADF}:
+                                raise
+            finally:
+                if not replaced:
+                    try:
+                        os.unlink(temporary, dir_fd=descriptor) if descriptor is not None else (parent / temporary).unlink()
+                    except FileNotFoundError:
+                        pass
+        return Snapshot(data, hashlib.sha256(data).hexdigest(), info.st_dev, info.st_ino, info.st_mtime_ns, stat.S_IMODE(info.st_mode), info.st_nlink)
 
     def trash(self, relative: str):
         path = self._relative(relative)

@@ -4,7 +4,7 @@ A Python desktop application for local Markdown notes, with linked notes and spa
 
 ## Current status
 
-Milestone 1 is being implemented as **Bluebell**, a native Python/PySide6 application. The window, vault explorer and real filesystem actions have been verified on macOS. See [PLAN.md](PLAN.md) for actual progress.
+Milestone 1 is being implemented as **Bluebell**, a native Python/PySide6 application. The explorer, real filesystem actions, Markdown editor/reading view and safe autosave are verified on macOS. See [PLAN.md](PLAN.md) for actual progress.
 
 ## Setup, launch and tests
 
@@ -49,4 +49,8 @@ Notes live as ordinary `.md` files in a vault folder chosen by the user. Develop
 
 The first milestone requires no AI service, API key or `.env` file. If later work introduces credentials, keep them out of Git. `.gitignore` does not remove already tracked secrets.
 
-Until step 3, selected notes show read-only Markdown source. Editing, saving and navigation follow next. Graphs, AI, flashcards and distribution remain later milestones.
+Edit ordinary Markdown, switch to **Read** for formatted text, and use **Find**, **Bold**, **Italic**, **Undo** and **Redo**. Lists continue on Enter; an empty item ends a list. Tab/Shift-Tab change list indentation and move focus on ordinary text. Saves run after 500 ms idle and before switching/closing; **Save** is always available.
+
+If another editor changes a note, Bluebell reloads a clean note or pauses autosave when local edits conflict. **Reload from disk** explicitly discards local edits; **Save a conflict copy…** preserves both. If a note disappears, save a new copy; the old path is never recreated automatically. A failed write keeps your text and blocks leaving until resolved/cancelled.
+
+Reading escapes raw HTML, permits only vault-contained raster images, and never fetches remote/data images or executes scripts. Note text is limited to 8 MiB; image input to 20 MiB/24 million pixels. All symlinks are refused. Atomic save/version checks reduce conflict risk but cannot eliminate the concurrent check/replace gap. Search/link navigation follows in step 4. Graphs, AI, flashcards and distribution remain later milestones.
