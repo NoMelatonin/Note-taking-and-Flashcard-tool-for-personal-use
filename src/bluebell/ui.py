@@ -18,7 +18,7 @@ from bluebell.navigation import resolve_link, search_notes
 from bluebell.rendering import SafePreview
 from bluebell.settings import load_settings, save_settings
 from bluebell.theme import STYLE
-from bluebell.vault import ConflictError, Vault, VaultError
+from bluebell.vault import Vault, VaultError
 from bluebell.workers import Work
 
 
@@ -77,6 +77,10 @@ class MainWindow(QMainWindow):
         self.items = {}
         self.loading = False
         self.mode = "edit"
+        try:
+            self.font_size = min(26, max(11, int(load_settings().get("font_size", 15))))
+        except (TypeError, ValueError):
+            self.font_size = 15
         self.closed = False
         self.last_scan = None
         self.vault_epoch = 0
@@ -105,6 +109,7 @@ class MainWindow(QMainWindow):
         self._build_sidebar()
         self._build_content()
         self._build_shortcuts()
+        self.update_zoom(remember=False)
         self.save_state = plain_label("No note open")
         self.statusBar().addPermanentWidget(self.save_state)
         self.statusBar().showMessage("Local files. No account needed.")
@@ -184,6 +189,8 @@ class MainWindow(QMainWindow):
         row.addWidget(self.trash_button)
         row.addWidget(self.refresh_button)
         side.addLayout(row)
+        self.tree.currentItemChanged.connect(self.update_actions)
+        self.search_results.currentItemChanged.connect(self.update_actions)
         self.splitter.addWidget(sidebar)
 
     def _build_content(self):
@@ -228,6 +235,15 @@ class MainWindow(QMainWindow):
         self.edit_button.clicked.connect(lambda: self.set_mode("edit"))
         self.read_button.clicked.connect(lambda: self.set_mode("read"))
         row.addStretch()
+        self.zoom_out_button = QPushButton("A−")
+        self.zoom_out_button.setAccessibleName("Zoom out")
+        self.zoom_out_button.clicked.connect(lambda: self.zoom(-1))
+        self.zoom_in_button = QPushButton("A+")
+        self.zoom_in_button.setAccessibleName("Zoom in")
+        self.zoom_in_button.clicked.connect(lambda: self.zoom(1))
+        self.zoom_label = plain_label("100%", objectName="hint")
+        for widget in (self.zoom_out_button, self.zoom_label, self.zoom_in_button):
+            row.addWidget(widget)
         self.save_button = QPushButton("Save")
         self.save_button.clicked.connect(lambda: self.save_document(True))
         row.addWidget(self.save_button)
@@ -307,6 +323,8 @@ class MainWindow(QMainWindow):
             (QKeySequence.Italic, lambda: self.format_source("*")),
             (QKeySequence("Ctrl+E"), lambda: self.set_mode("read" if self.mode == "edit" else "edit")),
             (QKeySequence("Ctrl+Shift+F"), self.focus_search),
+            (QKeySequence.ZoomIn, lambda: self.zoom(1)),
+            (QKeySequence.ZoomOut, lambda: self.zoom(-1)),
         ]
         for sequence, action in actions:
             QShortcut(sequence, self, activated=action)
@@ -360,12 +378,49 @@ class MainWindow(QMainWindow):
     def _enable_vault_controls(self, enabled):
         for button in (self.new_note_button, self.new_folder_button, self.rename_button, self.trash_button, self.refresh_button, self.search_button, self.search_text):
             button.setEnabled(enabled)
+        self.update_actions()
+
+    def update_actions(self, *args):
+        allowed = bool(self.vault) and self.selected_path() != "."
+        self.rename_button.setEnabled(allowed)
+        self.trash_button.setEnabled(allowed)
+
+    def zoom(self, direction):
+        self.font_size = min(26, max(11, self.font_size + direction))
+        self.update_zoom()
+
+    def update_zoom(self, *, remember=True):
+        self.editor.setStyleSheet(f"font-size: {self.font_size}px;")
+        self.preview.setStyleSheet(f"font-size: {self.font_size}px;")
+        self.preview.set_zoom(self.font_size)
+        self.zoom_label.setText(f"{round(self.font_size / 15 * 100)}%")
+        self.zoom_out_button.setEnabled(self.font_size > 11)
+        self.zoom_in_button.setEnabled(self.font_size < 26)
+        if self.document and self.mode == "read":
+            scroll = self.preview.verticalScrollBar().value()
+            self._render()
+            self.preview.verticalScrollBar().setValue(scroll)
+        if remember:
+            try:
+                settings = load_settings()
+                settings["font_size"] = self.font_size
+                save_settings(settings)
+            except OSError:
+                self.statusBar().showMessage("Zoom changed; could not remember it for next time.")
 
     def show_error(self, title, error):
         box = QMessageBox(QMessageBox.Warning, title, str(error), QMessageBox.Ok, self)
         box.setTextFormat(Qt.PlainText)
         box.exec()
+        box.deleteLater()
         self.statusBar().showMessage(str(error))
+
+    @staticmethod
+    def name_result(dialog):
+        accepted = dialog.exec() == QDialog.Accepted
+        result = dialog.result_path if accepted else None
+        dialog.deleteLater()
+        return result
 
     def selected_path(self):
         if self.search_text.text() and self.search_results.currentItem():
@@ -521,17 +576,20 @@ class MainWindow(QMainWindow):
         self.open_note(item.data(Qt.UserRole))
 
     def create_entry(self, folder=False):
-        if not self.vault or not self.flush_pending():
+        if not self.vault:
             return
         destination = self.destination()
+        if not self.flush_pending():
+            return
         dialog = NameDialog(self, "New folder" if folder else "New Markdown note", destination,
                             lambda name: self.vault.create(destination, name, folder=folder))
-        if dialog.exec() == QDialog.Accepted:
+        result = self.name_result(dialog)
+        if result is not None:
             self.search_text.clear()
             self.refresh_tree()
-            self.select_path(dialog.result_path)
+            self.select_path(result)
             if not folder:
-                self.open_note(dialog.result_path)
+                self.open_note(result)
                 self.set_mode("edit")
 
     def tree_clicked(self, item, column=0):
@@ -576,7 +634,7 @@ class MainWindow(QMainWindow):
         self.loading = False
         if preserve_position:
             cursor = self.editor.textCursor()
-            cursor.setPosition(min(position, len(text)))
+            cursor.setPosition(min(position, self.editor.document().characterCount() - 1))
             self.editor.setTextCursor(cursor)
             self.editor.verticalScrollBar().setValue(scroll)
 
@@ -602,6 +660,10 @@ class MainWindow(QMainWindow):
             self.save_state.setText("Unsaved" if self.document.conflict or self.document.missing else "Save failed")
             self._show_document_notice()
             self.statusBar().showMessage(str(error))
+            return False
+        if self.document.paused:
+            self.save_state.setText("Save failed" if self.document.error else "Unsaved")
+            self._show_document_notice()
             return False
         self.save_state.setText("Saved")
         if not self.document.paused:
@@ -693,11 +755,12 @@ class MainWindow(QMainWindow):
         dialog = NameDialog(self, "Save your edits as a new Markdown note", parent,
                             lambda name: self.vault.create(parent, name, content=self.document.encoded()), initial=initial,
                             hint="The disk version and original path will be left unchanged.")
-        if dialog.exec() != QDialog.Accepted:
+        result = self.name_result(dialog)
+        if result is None:
             return False
-        self._adopt_document(Document(self.vault, dialog.result_path))
+        self._adopt_document(Document(self.vault, result))
         self.refresh_tree()
-        self.select_path(dialog.result_path)
+        self.select_path(result)
         return True
 
     def _render(self):
@@ -787,14 +850,16 @@ class MainWindow(QMainWindow):
         return self.open_note(relative)
 
     def rename_entry(self):
-        if not self.vault or self.selected_path() == "." or not self.flush_pending():
+        if not self.vault or self.selected_path() == ".":
             return
         old = self.selected_path()
+        if not self.flush_pending():
+            return
         dialog = NameDialog(self, "Rename", str(PurePosixPath(old).parent),
                             lambda name: self.vault.rename(old, name), initial=PurePosixPath(old).name,
                             hint="Links to renamed paths may need updating. Automatic link rewriting comes later.")
-        if dialog.exec() == QDialog.Accepted:
-            new = dialog.result_path
+        new = self.name_result(dialog)
+        if new is not None:
             self.search_text.clear()
             if self.active_path and (self.active_path == old or self.active_path.startswith(old + "/")):
                 self.active_path = new + self.active_path[len(old):]
@@ -804,10 +869,16 @@ class MainWindow(QMainWindow):
             self.select_path(new)
 
     def trash_entry(self):
-        if not self.vault or self.selected_path() == "." or not self.flush_pending():
+        if not self.vault or self.selected_path() == ".":
             return
         relative = self.selected_path()
-        folder = self.items[relative].data(0, Qt.UserRole + 1) if relative in self.items else False
+        if not self.flush_pending():
+            return
+        try:
+            folder = self.vault.resolve(relative).is_dir()
+        except (OSError, VaultError) as error:
+            self.show_error("Could not move to Trash", error)
+            return
         message = f'Move "{relative}" to the operating system\'s Trash?'
         if folder:
             message += " All of this folder's contents will also move to Trash."

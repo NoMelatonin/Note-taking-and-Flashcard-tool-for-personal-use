@@ -2,6 +2,7 @@
 
 STYLE = """
 QWidget { color: #2C4252; font-size: 15px; }
+QLineEdit, QPlainTextEdit { placeholder-text-color: #526979; }
 QMainWindow, QWidget#canvas { background: #F1F3F4; }
 QWidget#sidebar { background: #E6EEF3; }
 QLabel#brand { font-size: 23px; font-weight: 600; }
@@ -31,7 +32,7 @@ QSplitter::handle { background: #C7D4DD; width: 3px; }
 QMenu, QDialog, QMessageBox { background: #F1F3F4; }
 QMenu::item { padding: 8px 20px; }
 QMenu::item:selected { background: #D4E8F5; }
-QLabel#notice { background: #D4E8F5; padding: 10px; border-radius: 6px; }
+QFrame#notice { background: #D4E8F5; border: 1px solid #416881; border-radius: 6px; }
 QScrollBar:vertical { background: #E6EEF3; width: 12px; }
 QScrollBar::handle:vertical { background: #C7D4DD; border-radius: 5px; min-height: 25px; }
 """

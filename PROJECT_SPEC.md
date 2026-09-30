@@ -1,6 +1,6 @@
 # Local notes and flashcards — project specification
 
-Status: first implementation milestone in progress, 30 September 2026. Python/PySide6 selected; first native window verified. Other later-milestone technology choices remain proposals.
+Status: Milestone 1 implemented and verified on macOS, 30 September 2026. Python/PySide6 selected; the temporary app name is Bluebell. See PLAN.md and docs/VERIFICATION.md. Later-milestone technology choices remain proposals.
 
 Project: Remnote-Obsidian rebuild.
 
@@ -22,7 +22,7 @@ Canonical repository: `/Users/max/Desktop/Second-Brain/Own Projects/Remnote-Obsi
 
 These are recommendations, not settled requirements:
 
-- Python for application logic, PySide6 for the desktop interface.
+- Python for application logic, PySide6 for the desktop interface — selected and implemented for Milestone 1.
 - Markdown files as the authoritative note storage; SQLite for cards and review history.
 - `[[note links]]` for references and backlinks.
 - Ollama with a locally downloaded model for background card generation. Select the model after checking available memory and evaluating sample cards.
@@ -53,7 +53,8 @@ For each milestone: explain the design, implement, verify, let the user try it, 
 - `AGENTS.md`: working rules, location and security requirements.
 - `PLAN.md`: staged implementation and verification progress.
 - `docs/MILESTONE_1.md`: first-deliverable requirements and acceptance criteria.
-- `START_CODEX.md`: ready-to-use implementation prompt.
+- `docs/VERIFICATION.md`: acceptance evidence, tested environment and limitations.
+- `Launch.command`: local macOS development launcher after setup.
 
 The first task is the note-taking system only. Graphs, flashcards, AI, cloud sync, plugins and public distribution remain subsequent work.
 

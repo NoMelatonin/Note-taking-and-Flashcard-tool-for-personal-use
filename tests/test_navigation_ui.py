@@ -118,3 +118,11 @@ def test_actual_reading_click_and_source_control_click(qtbot, window):
     point = window.editor.cursorRect(cursor).center()
     qtbot.mouseClick(window.editor.viewport(), Qt.LeftButton, Qt.ControlModifier, point)
     assert window.active_path == "Ideas/Thought.md"
+
+
+def test_search_updates_after_external_content_edit(qtbot, window):
+    window.search_text.setText("freshneedle")
+    qtbot.waitUntil(lambda: window.search_summary.text().startswith("No matching"), timeout=2000)
+    (window.vault.root / "Ideas" / "Thought.md").write_text("A freshneedle appears\n")
+    qtbot.waitUntil(lambda: window.search_results.count() == 1, timeout=2000)
+    assert "freshneedle" in window.search_results.item(0).text()

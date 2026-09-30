@@ -29,6 +29,11 @@ def verify():
     window.preview.verticalScrollBar().setValue(window.preview.verticalScrollBar().maximum())
     app.processEvents()
     assert window.grab().save(str(root / "work" / "reading-image.png"))
+    window.resize(860, 600)
+    window.splitter.setSizes([280, 580])
+    window.preview.verticalScrollBar().setValue(0)
+    app.processEvents()
+    assert window.grab().save(str(root / "work" / "laptop.png"))
     window.close()
     app.quit()
 

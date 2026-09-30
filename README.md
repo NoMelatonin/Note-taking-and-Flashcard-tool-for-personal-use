@@ -1,58 +1,100 @@
-# Remnote-Obsidian rebuild
+# Bluebell — local Markdown notes
 
-A Python desktop application for local Markdown notes, with linked notes and spaced-repetition flashcards planned for later milestones. macOS is the first target; the implementation should remain portable to Windows and Linux.
+Milestone 1 is implemented: a native desktop notebook with baby-blue accents, dimmed-white surfaces, a real vault explorer, Markdown editing/reading, safe autosave, search and internal links. Graphs, AI and flashcards remain later milestones.
 
-## Current status
+## Setup and launch
 
-Milestone 1 is being implemented as **Bluebell**, a native Python/PySide6 application. The explorer, Markdown editor/reading view, safe autosave, search and note links are verified on macOS. Final usability review is in progress; see [PLAN.md](PLAN.md).
-
-## Setup, launch and tests
-
-Use Python 3.11–3.14 (verified: Python 3.14.5, PySide6 6.11.2, macOS). Run from this repository:
+Run from this repository's implementation worktree. Requires Python 3.11–3.14; verified on **Python 3.14.5, PySide6 6.11.2, macOS 26.5.2, Apple Silicon**. The pinned Qt wheels require macOS 13 or later; older Macs and other Python versions in the supported range have not been tested.
 
 ```sh
 python3 -m venv .venv
-.venv/bin/python -m pip install -e '.[dev]'
-.venv/bin/python -m bluebell --no-restore
-.venv/bin/python -m pytest
+.venv/bin/python -m pip install -c requirements.lock -e '.[dev]'
+.venv/bin/python -m bluebell
 ```
 
-Choose **Open vault…** to select an existing folder. Installation downloads dependencies once; the app itself needs no network. `--vault PATH` opens a folder directly. `python tools/smoke_gui.py` briefly launches the native app and saves a screenshot under ignored `work/`.
+Installation downloads dependencies once. The running app needs no account, AI service, database or network connection. **Open vault…** uses the native folder chooser. `--no-restore` starts at the empty chooser; `--vault PATH` opens an existing folder directly.
 
-Try an isolated example:
+After setup, double-click **Launch.command** in Finder or run `./Launch.command`. This is a development launcher, not a packaged/signed Mac application. Use a terminal with normal macOS GUI access; the restricted Codex shell blocks Cocoa/clipboard services without a permitted native launch.
+
+Try the isolated example:
 
 ```sh
 .venv/bin/python tools/make_demo_vault.py
 .venv/bin/python -m bluebell --vault work/demo-vault
 ```
 
-Select a folder to create inside it, or a note to create in its parent. Root/no selection creates at the vault root. Rename warns about links; Trash asks for confirmation and never falls back to permanent deletion. All symlinks are skipped. Existing non-Markdown files remain untouched.
+The generator creates synthetic notes and an image under ignored `work/`. An existing demo is left untouched, including your edits. Select **Welcome.md**, then try **Read** and its internal links.
 
-For headless tests, use `QT_QPA_PLATFORM=offscreen .venv/bin/python -m pytest`. A terminal with normal macOS GUI access is required to verify the native window. Windows/Linux packaging and execution are unverified.
+## Everyday workflow
 
-## Start working with Codex
+- Select a folder, then **New folder** or **New note** to create inside it. A selected note uses its parent; root/no selection uses the vault root. The name dialog shows the destination. Files/directories are created immediately; duplicate or unsafe names never overwrite existing entries.
+- Write ordinary Markdown in **Edit**, then choose **Read** for headings, formatting, lists, tasks, tables, quotes, code and local images. Source is never reformatted merely by opening it. **A− / A+** zoom the note; drag the divider to resize the sidebar.
+- Autosave runs after 500 ms idle. **Save** and switching/closing flush pending edits. Status says **Saving**, **Saved**, **Unsaved** or **Save failed**. **Undo/Redo** apply to editor text, not filesystem operations.
+- **Rename** preserves content and warns that links may need updating. **Trash** confirms the item and folder contents, uses macOS Trash, and leaves the item intact when Trash fails. Non-Markdown files are preserved; dot-directories are hidden.
+- Search filenames and contents in **Search notes…**. Results show paths and context; current unsaved text is labelled. Clear search to return to the tree. Results are capped at 200; narrow the query when capped. Unreadable notes are reported as skipped.
+- Click links in **Read**, or Cmd/Ctrl-click simple inline links in source. `[[Note]]` resolves only when unique; `[[folder/Note]]` is relative to the vault root; `[[folder/Note.md|Label]]` supports aliases. `[Label](../Note.md)` is relative to the current note. Missing/ambiguous links show an error and never create files.
+- External additions, renames, removals and active-note changes normally appear after the 750 ms poll. **Refresh** is the fallback. Search/scan workers keep those operations off the UI thread.
 
-1. Open this repository as a local project in Codex, or as a folder in VS Code with the Codex extension.
-2. Open [START_CODEX.md](START_CODEX.md) and send its implementation prompt to Codex.
-3. Let Codex implement and verify one step at a time. Try the app at the checkpoints in [PLAN.md](PLAN.md).
+## Conflicts and failed saves
 
-## Project documents
+A clean note changed elsewhere reloads automatically. If local edits conflict, autosave pauses: **Reload from disk** explicitly discards local edits, while **Save a conflict copy…** creates a separate note and preserves the disk version. If a note is removed or renamed outside the app, its editor text stays available; save an explicit new copy inside the vault. The old path is never recreated silently.
 
-- [PROJECT_SPEC.md](PROJECT_SPEC.md): overall requirements and later milestones.
-- [docs/MILESTONE_1.md](docs/MILESTONE_1.md): exact first-task scope, appearance and acceptance criteria.
-- [PLAN.md](PLAN.md): implementation sequence and verification status.
-- [AGENTS.md](AGENTS.md): project instructions and security rules.
+Permission/disk failures keep the editor text and show an error. Leaving or closing with unsaved changes requires resolving the save, saving a copy, explicitly reloading/discarding, or cancelling the transition. If the entire vault is unavailable, restore/reopen it before saving there; text can still be copied from the source editor. Pending editor buffers have no crash/force-quit recovery.
 
-## Storage and security
+## Shortcuts
 
-Notes live as ordinary `.md` files in a vault folder chosen by the user. Development scratch work belongs in ignored `work/`, and private development settings/data in ignored `.local/`. Use synthetic notes in tests.
+Use Cmd on macOS and Ctrl on Windows/Linux. Buttons remain available.
 
-The first milestone requires no AI service, API key or `.env` file. If later work introduces credentials, keep them out of Git. `.gitignore` does not remove already tracked secrets.
+| Shortcut | Action |
+| --- | --- |
+| Cmd/Ctrl+N | New note at the selected destination |
+| Cmd/Ctrl+S | Save |
+| Cmd/Ctrl+F | Find in the active note |
+| Cmd/Ctrl+Shift+F | Search the vault |
+| Cmd/Ctrl+E | Toggle Edit/Read |
+| Cmd/Ctrl+B / I | Bold / italic source syntax |
+| Platform Undo/Redo | Undo/redo source edits |
+| Platform zoom shortcuts | Increase/decrease note text size |
+| Enter in a list | Continue bullet/number/task list; empty item ends it |
+| Tab / Shift-Tab | Indent/outdent lists; otherwise move keyboard focus |
 
-Edit ordinary Markdown, switch to **Read** for formatted text, and use **Find**, **Bold**, **Italic**, **Undo** and **Redo**. Lists continue on Enter; an empty item ends a list. Tab/Shift-Tab change list indentation and move focus on ordinary text. Saves run after 500 ms idle and before switching/closing; **Save** is always available.
+## Verification
 
-If another editor changes a note, Bluebell reloads a clean note or pauses autosave when local edits conflict. **Reload from disk** explicitly discards local edits; **Save a conflict copy…** preserves both. If a note disappears, save a new copy; the old path is never recreated automatically. A failed write keeps your text and blocks leaving until resolved/cancelled.
+```sh
+.venv/bin/python -m pytest
+QT_QPA_PLATFORM=offscreen .venv/bin/python -m pytest
+.venv/bin/python tools/smoke_gui.py
+.venv/bin/python tools/verify_palette.py
+```
 
-Search names and contents with **Search notes…** or Cmd/Ctrl+Shift+F. Results include paths and context. Clear search to return to the folder tree. `[[Note]]`, `[[folder/Note|Label]]` and relative `[Label](../Note.md)` links navigate on a reading-view click or Cmd/Ctrl-click in source. Bare duplicate names are reported as ambiguous. External tree changes normally appear after the 750 ms poll; **Refresh** is the fallback.
+The final native acceptance run passed **80 tests**, including the opt-in OS Trash integration. Default tests skip that one case (79 passed, 1 skipped). To reproduce the full native run:
 
-Reading escapes raw HTML, permits only vault-contained raster images, and never fetches remote/data images or executes scripts. HTTP/HTTPS links open in the default browser only when clicked. Note text is limited to 8 MiB; image input to 20 MiB/24 million pixels. All symlinks are refused. Atomic save/version checks reduce conflict risk but cannot eliminate the concurrent check/replace gap. Graphs, AI, flashcards and distribution remain later milestones.
+```sh
+BLUEBELL_TEST_NATIVE_TRASH=1 .venv/bin/python -m pytest
+```
+
+That test leaves a uniquely named `bluebell-synthetic-*` folder in your macOS Trash and verifies its contents are recoverable. All test vaults/settings are synthetic and repository-local under ignored `work/`. The actual study vault was never used for write tests. `smoke_gui.py` launches the real Cocoa window and saves QA images under `work/`; offscreen tests alone do not establish a native launch.
+
+See [PLAN.md](PLAN.md) for verified checkpoints and [docs/VERIFICATION.md](docs/VERIFICATION.md) for acceptance evidence. Setup, CLI help and the development launcher were tested. Windows/Linux execution, packaging, accessibility with a screen reader, and large/network vault performance are unverified.
+
+## Filesystem and preview security
+
+Notes remain ordinary UTF-8 `.md` files; existing uppercase `.MD` files are also supported. Saves stage a same-directory temporary file, fsync it, check the disk version again and atomically replace the note. Clean opening never writes; UTF-8 BOM and practical newline conventions survive edits. Ordinary file mode bits are preserved. Extended ACLs, ownership, Finder tags and other extended metadata are not specifically preserved by replacement. No backup/version history is provided.
+
+Traversal and unsafe names are rejected. All symlinks are refused, including links within the vault. macOS/Linux reads and mutations use directory descriptors and no-follow opens; macOS rename uses exclusive `renameatx_np`, so an existing target cannot be replaced. Creation uses exclusive file opens and case/Unicode-normalization collision checks. New hidden names and Windows-reserved names are refused.
+
+Raw HTML is escaped. The reading view uses Qt Widgets, without a JavaScript/web engine. Only validated, vault-contained raster images load; remote/data images, SVG, arbitrary file resources and unsupported URI schemes are blocked. HTTP/HTTPS links open the default browser only after an explicit click. Note input is capped at 8 MiB; image input at 20 MiB and 24 million pixels. Oversized/invalid UTF-8 notes are left unchanged.
+
+**Remaining race:** hashing/inode/mtime checks detect conflicting versions but cannot atomically compare-and-replace against another writer. A change in the final check/replace gap may still be overwritten. The OS Trash API is path-based, and an already-open directory can be moved by another process; these operations are not an OS sandbox against a concurrent process manipulating the same filesystem. Avoid simultaneous writes to the same note. Static traversal, symlink escapes and unsafe preview resources are covered by the tests.
+
+Private settings (last vault and zoom) live in ignored `.local/settings.json`, written atomically with mode `0600`. `BLUEBELL_SETTINGS_DIR` is a test/development override. No personal vault, credentials or runtime settings belong in Git; `.env` variants, `.local/`, `work/`, virtual environments and generated files are ignored.
+
+Renderer/Trash API references: [Qt QTextBrowser](https://doc.qt.io/qtforpython-6/PySide6/QtWidgets/QTextBrowser.html), [markdown-it-py security](https://markdown-it-py.readthedocs.io/en/latest/security.html), [Send2Trash](https://github.com/arsenetar/send2trash).
+
+## Code and scope
+
+`src/bluebell/` separates `vault.py` (filesystem boundary/actions), `document.py` (saving/conflicts), `navigation.py` (search/links), `rendering.py` (restricted preview), `editor.py` (source behavior), `workers.py` (background scans) and `ui.py` (native controls). `python -m bluebell` / `bluebell` are the entry points. `requirements.lock` pins the tested runtime/test dependencies.
+
+Inline Live Preview, heading/block anchors, complex source modifier-click parsing, SVG/remote images, LaTeX, callouts, embeds, clipboard attachments, backlinks/graph, AI, flashcards, cloud sync, plugins and public distribution remain outside Milestone 1. Task checkboxes render but are edited in source.
+
+This implementation lives on local branch `codex/milestone-1` in a managed worktree of the repository. The original checkout and its untracked personal files were left untouched; no GitHub push was performed. Requirements: [PROJECT_SPEC.md](PROJECT_SPEC.md), [docs/MILESTONE_1.md](docs/MILESTONE_1.md), [AGENTS.md](AGENTS.md).

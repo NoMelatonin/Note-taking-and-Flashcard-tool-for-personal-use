@@ -8,8 +8,9 @@ from urllib.parse import quote, unquote, urlsplit
 from markdown_it import MarkdownIt
 from mdit_py_plugins.tasklists import tasklists_plugin
 from PySide6.QtCore import QByteArray, QBuffer, QIODevice, Qt, QUrl
-from PySide6.QtGui import QImage, QImageReader, QTextDocument
+from PySide6.QtGui import QFontDatabase, QImage, QImageReader, QTextDocument
 from PySide6.QtWidgets import QTextBrowser
+from shiboken6 import isValid
 
 from bluebell.vault import MAX_IMAGE_BYTES, VaultError
 
@@ -110,14 +111,18 @@ class SafePreview(QTextBrowser):
         self.setOpenExternalLinks(False)
         self.setSearchPaths([])
         self.setAccessibleName("Formatted Markdown reading view")
-        self.document().setDefaultStyleSheet("""
-            body { color: #2C4252; font-size: 16px; }
-            h1 { font-size: 28px; } h2 { font-size: 22px; } h3 { font-size: 18px; }
-            a { color: #416881; text-decoration: underline; }
-            pre { background-color: #E6EEF3; white-space: pre-wrap; }
-            code { font-family: monospace; background-color: #E6EEF3; }
-            blockquote { color: #526979; margin-left: 20px; }
-            table { border-collapse: collapse; } th, td { padding: 8px; border: 1px solid #C7D4DD; }
+        self.set_zoom(15)
+
+    def set_zoom(self, size):
+        fixed = QFontDatabase.systemFont(QFontDatabase.FixedFont).family().replace('"', '')
+        self.document().setDefaultStyleSheet(f"""
+            body {{ color: #2C4252; font-size: {size}px; }}
+            h1 {{ font-size: {round(size * 1.85)}px; }} h2 {{ font-size: {round(size * 1.45)}px; }} h3 {{ font-size: {round(size * 1.2)}px; }}
+            a {{ color: #416881; text-decoration: underline; }}
+            pre {{ background-color: #E6EEF3; white-space: pre-wrap; font-family: "{fixed}"; }}
+            code {{ font-family: "{fixed}"; background-color: #E6EEF3; }}
+            blockquote {{ color: #526979; margin-left: 20px; }}
+            table {{ border-collapse: collapse; }} th, td {{ padding: 8px; border: 1px solid #C7D4DD; }}
         """)
 
     def show_markdown(self, source: str, vault, current: str):
@@ -125,7 +130,10 @@ class SafePreview(QTextBrowser):
         # A new document also drops previously cached local-image resources.
         document = QTextDocument(self)
         document.setDefaultStyleSheet(self.document().defaultStyleSheet())
+        old = self.document()
         self.setDocument(document)
+        if isValid(old) and old.parent() == self:
+            old.deleteLater()
         self.setHtml(self.renderer.render(source, vault, current))
 
     def loadResource(self, kind, name):

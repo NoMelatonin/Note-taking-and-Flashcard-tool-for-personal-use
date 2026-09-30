@@ -9,6 +9,10 @@ from PySide6.QtWidgets import QPlainTextEdit
 LIST = re.compile(r"^(\s*)([-+*]|\d+[.)])\s+(\[[ xX]\]\s+)?(.*)$")
 
 
+def qt_length(text):
+    return len(text.encode("utf-16-le")) // 2
+
+
 class MarkdownEditor(QPlainTextEdit):
     linkRequested = Signal(str, bool)
 
@@ -29,17 +33,20 @@ class MarkdownEditor(QPlainTextEdit):
             selected = selected[len(marker):-len(marker)]
             cursor.insertText(selected)
             cursor.setPosition(start)
-            cursor.setPosition(start + len(selected), QTextCursor.KeepAnchor)
+            cursor.setPosition(start + qt_length(selected), QTextCursor.KeepAnchor)
         else:
             cursor.insertText(marker + selected + marker)
             cursor.setPosition(start + len(marker))
-            cursor.setPosition(start + len(marker) + len(selected), QTextCursor.KeepAnchor)
+            cursor.setPosition(start + len(marker) + qt_length(selected), QTextCursor.KeepAnchor)
         cursor.endEditBlock()
         self.setTextCursor(cursor)
         self.setFocus()
 
     def _inside_fence(self):
-        before = self.toPlainText()[:self.textCursor().block().position()]
+        cursor = QTextCursor(self.document())
+        cursor.setPosition(self.textCursor().block().position())
+        cursor.movePosition(QTextCursor.Start, QTextCursor.KeepAnchor)
+        before = cursor.selectedText().replace("\u2029", "\n")
         fence = None
         for line in before.splitlines():
             match = re.match(r"^\s{0,3}(`{3,}|~{3,})", line)
@@ -56,7 +63,7 @@ class MarkdownEditor(QPlainTextEdit):
         match = LIST.match(cursor.block().text())
         if event.key() in (Qt.Key_Return, Qt.Key_Enter) and not event.modifiers() and match and not cursor.hasSelection() and not self._inside_fence():
             indent, marker, task, content = match.groups()
-            if cursor.positionInBlock() >= match.start(4):
+            if cursor.positionInBlock() >= qt_length(cursor.block().text()[:match.start(4)]):
                 cursor.beginEditBlock()
                 if not content.strip():
                     cursor.movePosition(QTextCursor.StartOfBlock)
@@ -98,7 +105,8 @@ class MarkdownEditor(QPlainTextEdit):
     def mousePressEvent(self, event):
         if event.modifiers() & Qt.ControlModifier:
             cursor = self.cursorForPosition(event.position().toPoint())
-            line, position = cursor.block().text(), cursor.positionInBlock()
+            line = cursor.block().text()
+            position = len(line.encode("utf-16-le")[:cursor.positionInBlock() * 2].decode("utf-16-le", errors="ignore"))
             for match in re.finditer(r"(?<!!)\[\[([^]\n]+)\]\]|(?<!!)\[[^]\n]*\]\(([^)\n]+)\)", line):
                 if match.start() <= position <= match.end():
                     self.linkRequested.emit((match.group(1).split("|", 1)[0] if match.group(1) else match.group(2)).strip(), bool(match.group(1)))

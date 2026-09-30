@@ -1,6 +1,6 @@
 # Milestone 1 — local Markdown note-taking
 
-Status: ready for implementation. These are requirements and proposed defaults, not claims of completed functionality.
+Status: Milestone 1 implemented and verified on macOS, 30 September 2026. Acceptance evidence and explicit limitations: [VERIFICATION.md](VERIFICATION.md). The requirements below define the delivered scope.
 
 ## Outcome
 
@@ -105,19 +105,19 @@ Provide a `pyproject.toml`, a clear runnable entry point, appropriate tests, and
 
 ## 9. Acceptance checklist
 
-- [ ] App launches on macOS with the specified palette and an Open vault empty state.
-- [ ] Opening a synthetic existing vault preserves every file's contents before editing.
-- [ ] Root, nested and Unicode-named folders/notes can be created; filesystem entries and sidebar agree immediately.
-- [ ] Duplicate names, cancelled dialogs and write failures cause no overwrite or phantom entry.
-- [ ] Markdown editing, reading view, lists, tables and a local image work with a representative synthetic note.
-- [ ] Save, autosave, note switching and normal restart retain edits and produce readable `.md` files.
-- [ ] Rename/delete affect real entries; deletion uses Trash; unsaved text survives failures.
-- [ ] External edits/creation/removal refresh correctly; a conflicting edit preserves both versions.
-- [ ] Filename/content search and internal links work; missing/ambiguous links are handled clearly.
-- [ ] Traversal, symlink escape, scripts and remote-image requests are blocked without altering source notes.
-- [ ] Keyboard actions, focus visibility, resizing and save/error feedback are checked visually and functionally.
-- [ ] README launch instructions are tested; relevant automated tests pass; unverified behaviours are disclosed.
-- [ ] Git changes contain no personal vault, credentials, private settings or generated files.
+- [x] App launches on macOS with the specified palette and an Open vault empty state.
+- [x] Opening a synthetic existing vault preserves every file's contents before editing.
+- [x] Root, nested and Unicode-named folders/notes can be created; filesystem entries and sidebar agree immediately.
+- [x] Duplicate names, cancelled dialogs and write failures cause no overwrite or phantom entry.
+- [x] Markdown editing, reading view, lists, tables and a local image work with a representative synthetic note.
+- [x] Save, autosave, note switching and normal restart retain edits and produce readable `.md` files.
+- [x] Rename/delete affect real entries; deletion uses Trash; unsaved text survives failures.
+- [x] External edits/creation/removal refresh correctly; a conflicting edit preserves both versions.
+- [x] Filename/content search and internal links work; missing/ambiguous links are handled clearly.
+- [x] Traversal, symlink escape, scripts and remote-image requests are blocked without altering source notes.
+- [x] Keyboard actions, focus visibility, resizing and save/error feedback are checked visually and functionally.
+- [x] README launch instructions are tested; relevant automated tests pass; unverified behaviours are disclosed.
+- [x] Git changes contain no personal vault, credentials, private settings or generated files.
 
 ## Obsidian reference behaviour
 

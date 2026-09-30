@@ -203,7 +203,9 @@ class Vault:
         path = self._relative(relative)
         if not path.parts:
             raise VaultError("Select a note, not the vault root.")
-        self.resolve(relative)
+        checked = self.resolve(relative)
+        if not stat.S_ISREG(checked.lstat().st_mode):
+            raise VaultError("Only regular files can be opened.")
         with self.directory(str(path.parent)) as (descriptor, parent):
             flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_NONBLOCK", 0)
             handle = os.open(path.name, flags, dir_fd=descriptor) if descriptor is not None else os.open(parent / path.name, flags)
