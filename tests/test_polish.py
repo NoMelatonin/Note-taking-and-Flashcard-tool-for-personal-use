@@ -90,6 +90,40 @@ def test_writing_surface_and_explorer_are_frameless(window):
     assert not hasattr(window, "zoom_in_button")
 
 
+def test_workspace_search_sidebar_and_tab_controls(qtbot, window):
+    assert not window.search_container.isVisible()
+    window.toggle_sidebar()
+    assert not window.sidebar.isVisible()
+    window.focus_search()
+    assert window.sidebar.isVisible() and window.search_container.isVisible()
+    assert window.search_text.hasFocus()
+    window.search_text.setText("thought")
+    window.show_files()
+    assert window.search_text.text() == ""
+    assert not window.search_container.isVisible()
+    assert window.tab_label.text() == "Note"
+    assert window.note_heading.text() == "Note"
+    window.editor.appendPlainText("Saved when the tab closes")
+    qtbot.mouseClick(window.close_note_button, Qt.LeftButton)
+    assert window.document is None and window.pages.currentIndex() == 0
+    assert "Saved when the tab closes" in (window.vault.root / "Note.md").read_text()
+    assert window.note_heading.text() == ""
+    assert window.open_note("Note.md")
+    qtbot.mouseClick(window.mode_button, Qt.LeftButton)
+    assert window.mode == "read"
+    qtbot.mouseClick(window.mode_button, Qt.LeftButton)
+    assert window.mode == "edit"
+
+
+def test_cancelled_tab_close_preserves_editor_and_title(window, monkeypatch):
+    window.editor.appendPlainText("Keep these edits")
+    monkeypatch.setattr(window, "flush_pending", lambda: False)
+    assert not window.close_note()
+    assert window.active_path == "Note.md"
+    assert window.tab_label.text() == "Note"
+    assert "Keep these edits" in window.editor.toPlainText()
+
+
 def test_chooser_button_cancellation_and_missing_restore(qtbot, sandbox, monkeypatch):
     window = MainWindow(restore=False)
     qtbot.addWidget(window)

@@ -20,7 +20,7 @@ python3 -m venv .venv
 .venv/bin/python -m bluebell
 ```
 
-Installation downloads dependencies once. The running app needs no account, AI service, database or network connection. **Open vault…** uses the native folder chooser. `--no-restore` starts at the empty chooser; `--vault PATH` opens an existing folder directly.
+Installation downloads dependencies once. The running app needs no account, AI service, database or network connection. The folder icon at the bottom of the sidebar and **Open vault…** on the opening screen use the native folder chooser. `--no-restore` starts at the empty chooser; `--vault PATH` opens an existing folder directly.
 
 After setup, double-click **Launch.command** in Finder or run `./Launch.command`. This is a development launcher, not a packaged/signed Mac application. Use a terminal with normal macOS GUI access; the restricted Codex shell blocks Cocoa/clipboard services without a permitted native launch.
 
@@ -37,10 +37,14 @@ The generator creates synthetic notes and an image under ignored `work/`. An exi
 
 ## Everyday workflow
 
+The workspace follows the supplied reference: a narrow icon rail, compact folder tree with indentation guides, bottom vault selector, a single active-note tab, slim note header and centered writing column. Controls have accessible names and hover tooltips. The sidebar's folder/search icons switch between browsing and search; the panel icon hides or restores the sidebar. New note/folder and Collapse all are in the small explorer toolbar. The top-right book icon switches Edit/Read; the adjacent menu contains formatting, undo/redo, Find and Save. Closing the note tab flushes pending edits and can be cancelled if a save cannot be resolved.
+
+Note labels omit the `.md` extension; tooltips retain the actual path. The large title comes from the filename and does not add or rewrite any Markdown. Multiple tabs and graph controls remain later work. Cream backgrounds and baby-blue selection accents are retained from the earlier refinement.
+
 - Click anywhere on a folder row to expand/collapse it. Collapsing a parent also closes all nested folders. Select a folder, then **New folder** or **New note** to create inside it. A selected note uses its parent; root/no selection uses the vault root. The name dialog shows the destination. Files/directories are created immediately; duplicate or unsafe names never overwrite existing entries.
-- Write ordinary Markdown in **Edit**, then choose **Read** for headings, formatting, lists, tasks, tables, quotes, code and local images. Source is never reformatted merely by opening it. Zoom shortcuts adjust text size; drag the divider to resize the sidebar. Edit/Read, Save and Note actions live in the sidebar; the writing surface is frameless.
+- Write ordinary Markdown in **Edit**, then choose **Read** for headings, formatting, lists, tasks, tables, quotes, code and local images. Source is never reformatted merely by opening it. Zoom shortcuts adjust text size; drag the divider to resize the sidebar. The compact header provides Save, Find, reading-mode and Note actions icons; the writing surface is frameless.
 - Autosave runs after 500 ms idle. **Save** and switching/closing flush pending edits. Status says **Saving**, **Saved**, **Unsaved** or **Save failed**. **Undo/Redo** apply to editor text, not filesystem operations.
-- **Rename** preserves content and warns that links may need updating. **Trash** confirms the item and folder contents, uses macOS Trash, and leaves the item intact when Trash fails. Non-Markdown files are preserved; dot-directories are hidden.
+- **Rename** in the vault menu or tree context menu preserves content and warns that links may need updating. **Move to Trash** confirms the item and folder contents, uses macOS Trash, and leaves the item intact when Trash fails. Non-Markdown files are preserved; dot-directories are hidden.
 - Search filenames and contents in **Search notes…**. Results show paths and context; current unsaved text is labelled. Clear search to return to the tree. Results are capped at 200; narrow the query when capped. Unreadable notes are reported as skipped.
 - Click links in **Read**, or Cmd/Ctrl-click simple inline links in source. `[[Note]]` resolves only when unique; `[[folder/Note]]` is relative to the vault root; `[[folder/Note.md|Label]]` supports aliases. `[Label](../Note.md)` is relative to the current note. Missing/ambiguous links show an error and never create files.
 - External additions, renames, removals and active-note changes normally appear after the 750 ms poll. **Refresh** is the fallback. Search/scan workers keep those operations off the UI thread.

@@ -19,7 +19,7 @@ The user opens a macOS desktop app, chooses one folder as a vault, creates folde
 
 ## 2. Create and manage actual folders and notes
 
-- Keep **New note** and **New folder** buttons visible in the sidebar toolbar, with equivalent context-menu actions.
+- Keep accessible **New note** and **New folder** icon buttons visible in the sidebar toolbar, with equivalent context-menu actions.
 - If a folder is selected, create inside it. If a note is selected, create in its parent. With no selection, create at the vault root. The name dialog must show the destination.
 - A new note is a real UTF-8 `.md` file. Append `.md` when omitted; avoid appending it twice. Create the file before adding it to the sidebar and open it immediately.
 - A new folder is a real directory, visible both in the app and Finder immediately. Support nested creation using the same controls.
@@ -63,7 +63,7 @@ The user opens a macOS desktop app, chooses one folder as a vault, creates folde
 
 ## 6. Friendly, low-glare visual design
 
-Use an original visual identity with muted baby blue and warm cream surfaces. On 1 October 2026, the user refined the original dimmed-white default to darker cream, frameless writing/tree surfaces and sidebar note controls; visible font controls were removed. Avoid large pure-white backgrounds, neon accents, heavy shadows and distracting motion. This theme is an initial default and can be refined with the user after the first preview.
+Use an original visual identity with muted baby blue and warm cream surfaces. On 1 October 2026, the user refined the original dimmed-white default to darker cream, frameless writing/tree surfaces and sidebar note controls; visible font controls were removed. The subsequent screenshot refinement uses compact icon controls with tooltips, a bottom vault selector, one active-note tab, a slim note header and a centered text column. Avoid large pure-white backgrounds, neon accents, heavy shadows and distracting motion. This theme is an initial default and can be refined with the user after the first preview.
 
 | Role | Initial colour |
 | --- | --- |

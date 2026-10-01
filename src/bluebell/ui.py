@@ -5,13 +5,14 @@ from threading import Event
 from urllib.parse import unquote, urlsplit
 
 from PySide6.QtCore import Qt, QThreadPool, QTimer, QUrl, QSignalBlocker
-from PySide6.QtGui import QDesktopServices, QKeySequence, QShortcut, QTextCursor, QTextDocument
+from PySide6.QtGui import QActionGroup, QColor, QDesktopServices, QKeySequence, QShortcut, QTextCursor, QTextDocument
 from PySide6.QtWidgets import (
-    QButtonGroup, QDialog, QDialogButtonBox, QFileDialog, QFrame, QHBoxLayout,
+    QDialog, QDialogButtonBox, QFileDialog, QFrame, QHBoxLayout,
     QLabel, QLineEdit, QListWidget, QListWidgetItem, QMainWindow, QMenu, QMessageBox, QPushButton, QSplitter,
     QStackedWidget, QTreeWidget, QTreeWidgetItem, QVBoxLayout, QWidget,
 )
 
+from bluebell.icons import icon_button, line_icon
 from bluebell.document import Document
 from bluebell.editor import MarkdownEditor
 from bluebell.navigation import resolve_link, search_notes
@@ -67,6 +68,17 @@ class VaultTree(QTreeWidget):
                 child = pending.pop()
                 child.setExpanded(False)
                 pending.extend(child.child(index) for index in range(child.childCount()))
+
+    def drawBranches(self, painter, rect, index):
+        super().drawBranches(painter, rect, index)
+        painter.save()
+        painter.setPen(QColor("#C7C2B7"))
+        ancestor = index.parent()
+        while ancestor.isValid():
+            x = self.visualRect(ancestor).left() - self.indentation() // 2
+            painter.drawLine(x, rect.top(), x, rect.bottom())
+            ancestor = ancestor.parent()
+        painter.restore()
 
 
 class NameDialog(QDialog):
@@ -133,7 +145,7 @@ class MainWindow(QMainWindow):
         self.pool = QThreadPool(self)
         self.pool.setMaxThreadCount(2)
         self.setWindowTitle("Bluebell · local Markdown notes")
-        self.resize(1120, 760)
+        self.resize(1280, 800)
         self.setMinimumSize(760, 500)
         self.setStyleSheet(STYLE)
         self.autosave = QTimer(self)
@@ -153,8 +165,9 @@ class MainWindow(QMainWindow):
         self.update_zoom(remember=False)
         self.save_state = plain_label("No note open")
         self.statusBar().addPermanentWidget(self.save_state)
-        self.statusBar().showMessage("Local files. No account needed.")
+        self.statusBar().setSizeGripEnabled(False)
         self._enable_vault_controls(False)
+        self.update_note_chrome()
         if restore:
             last = load_settings().get("last_vault")
             if isinstance(last, str):
@@ -164,44 +177,71 @@ class MainWindow(QMainWindow):
                     self.empty_hint.setText("Your last vault is unavailable. Choose an existing folder to continue.")
 
     def _build_sidebar(self):
+        shell = QWidget(objectName="shell")
+        layout = QHBoxLayout(shell)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+        self.setCentralWidget(shell)
+        rail = QWidget(objectName="rail")
+        rail.setFixedWidth(42)
+        ribbon = QVBoxLayout(rail)
+        ribbon.setContentsMargins(5, 45, 5, 8)
+        ribbon.setSpacing(8)
+        self.files_button = icon_button("note", "Show files", self.show_files)
+        ribbon.addWidget(self.files_button)
+        ribbon.addWidget(icon_button("search", "Search vault", self.focus_search))
+        ribbon.addWidget(icon_button("new-note", "New note", lambda: self.create_entry(False)))
+        ribbon.addStretch()
+        ribbon.addWidget(icon_button("folder", "Choose a vault", self.choose_vault))
+        layout.addWidget(rail)
         self.splitter = QSplitter()
-        self.setCentralWidget(self.splitter)
-        sidebar = QWidget(objectName="sidebar")
-        sidebar.setMinimumWidth(255)
-        side = QVBoxLayout(sidebar)
+        layout.addWidget(self.splitter, 1)
+        self.sidebar = QWidget(objectName="sidebar")
+        self.sidebar.setMinimumWidth(200)
+        side = QVBoxLayout(self.sidebar)
         self.sidebar_layout = side
-        side.setContentsMargins(16, 20, 16, 16)
-        side.setSpacing(8)
-        side.addWidget(plain_label("Bluebell", objectName="brand"))
-        subtitle = plain_label("A little room for your thoughts", objectName="subtitle")
-        subtitle.setWordWrap(True)
-        side.addWidget(subtitle)
-        self.vault_label = plain_label("No vault open", objectName="hint")
-        side.addWidget(self.vault_label)
-        self.open_button = QPushButton("Open vault…")
-        self.open_button.clicked.connect(self.choose_vault)
-        side.addWidget(self.open_button)
-        search_row = QHBoxLayout()
+        side.setContentsMargins(0, 0, 0, 0)
+        side.setSpacing(0)
+        header = QWidget(objectName="sidebarHeader")
+        row = QHBoxLayout(header)
+        row.setContentsMargins(10, 5, 8, 5)
+        row.setSpacing(6)
+        self.files_header_button = icon_button("folder", "Show files", self.show_files)
+        self.files_header_button.setProperty("active", True)
+        row.addWidget(self.files_header_button)
+        self.search_button = icon_button("search", "Search notes", self.focus_search)
+        row.addWidget(self.search_button)
+        row.addStretch()
+        row.addWidget(icon_button("panel", "Toggle sidebar", self.toggle_sidebar))
+        header.setFixedHeight(40)
+        side.addWidget(header)
+        tools = QWidget(objectName="explorerTools")
+        row = QHBoxLayout(tools)
+        row.setContentsMargins(8, 6, 8, 4)
+        row.setSpacing(4)
+        row.addStretch()
+        self.new_note_button = icon_button("new-note", "New note", lambda: self.create_entry(False))
+        self.new_folder_button = icon_button("new-folder", "New folder", lambda: self.create_entry(True))
+        self.refresh_button = icon_button("refresh", "Refresh files", self.refresh_tree)
+        self.collapse_button = icon_button("collapse", "Collapse all folders", self.tree_collapse_all)
+        for button in (self.new_note_button, self.new_folder_button, self.refresh_button, self.collapse_button):
+            row.addWidget(button)
+        row.addStretch()
+        side.addWidget(tools)
         self.search_text = QLineEdit()
         self.search_text.setPlaceholderText("Search notes…")
         self.search_text.setClearButtonEnabled(True)
         self.search_text.setAccessibleName("Search notes across the vault")
         self.search_text.textChanged.connect(self.schedule_search)
         self.search_text.returnPressed.connect(self.run_search)
-        search_row.addWidget(self.search_text, 1)
-        self.search_button = QPushButton("Search")
-        self.search_button.clicked.connect(self.focus_search)
-        search_row.addWidget(self.search_button)
-        side.addLayout(search_row)
-        row = QHBoxLayout()
-        self.new_note_button = QPushButton("New note")
-        self.new_folder_button = QPushButton("New folder")
-        self.new_note_button.clicked.connect(lambda: self.create_entry(False))
-        self.new_folder_button.clicked.connect(lambda: self.create_entry(True))
-        row.addWidget(self.new_note_button)
-        row.addWidget(self.new_folder_button)
-        side.addLayout(row)
+        self.search_container = QWidget()
+        row = QHBoxLayout(self.search_container)
+        row.setContentsMargins(12, 4, 12, 6)
+        row.addWidget(self.search_text)
+        self.search_container.hide()
+        side.addWidget(self.search_container)
         self.tree = VaultTree()
+        self.tree.setIndentation(18)
         self.tree.setFrameShape(QFrame.NoFrame)
         self.tree.setHeaderHidden(True)
         self.tree.setAccessibleName("Vault folders and Markdown notes")
@@ -222,22 +262,108 @@ class MainWindow(QMainWindow):
         self.search_summary.hide()
         side.addWidget(self.search_summary)
         side.addWidget(self.explorer_views, 1)
-        row = QHBoxLayout()
-        self.rename_button = QPushButton("Rename")
-        self.trash_button = QPushButton("Trash")
-        self.refresh_button = QPushButton("Refresh")
-        self.rename_button.clicked.connect(self.rename_entry)
-        self.trash_button.clicked.connect(self.trash_entry)
-        self.refresh_button.clicked.connect(self.refresh_tree)
-        row.addWidget(self.rename_button)
-        row.addWidget(self.trash_button)
-        row.addWidget(self.refresh_button)
-        side.addLayout(row)
+        footer = QWidget(objectName="vaultFooter")
+        row = QHBoxLayout(footer)
+        row.setContentsMargins(10, 4, 8, 4)
+        row.setSpacing(4)
+        self.open_button = icon_button("folder", "Open vault…", self.choose_vault)
+        row.addWidget(self.open_button)
+        self.vault_label = plain_label("No vault open", objectName="vaultName")
+        row.addWidget(self.vault_label, 1)
+        actions_button = icon_button("more", "Vault actions")
+        menu = QMenu(actions_button)
+        menu.addAction("Open another vault…", self.choose_vault)
+        menu.addSeparator()
+        self.rename_button = menu.addAction("Rename selected…", self.rename_entry)
+        self.trash_button = menu.addAction("Move selected to Trash…", self.trash_entry)
+        menu.addAction("Refresh files", self.refresh_tree)
+        actions_button.setMenu(menu)
+        row.addWidget(actions_button)
+        side.addWidget(footer)
         self.tree.currentItemChanged.connect(self.update_actions)
         self.search_results.currentItemChanged.connect(self.update_actions)
-        self.splitter.addWidget(sidebar)
+        self.splitter.addWidget(self.sidebar)
+
+    def toggle_sidebar(self):
+        self.sidebar.setVisible(not self.sidebar.isVisible())
+
+    def show_files(self):
+        self.sidebar.show()
+        self.search_text.clear()
+        self.search_container.hide()
+        self.set_explorer_mode(False)
+        self.explorer_views.setCurrentIndex(0)
+        self.tree.setFocus()
+
+    def set_explorer_mode(self, search):
+        for button, active in ((self.files_header_button, not search), (self.search_button, search)):
+            button.setProperty("active", active)
+            button.style().unpolish(button)
+            button.style().polish(button)
+            button.update()
+
+    def tree_collapse_all(self):
+        self.tree.collapseAll()
 
     def _build_content(self):
+        self.content = QWidget(objectName="canvas")
+        content = QVBoxLayout(self.content)
+        content.setContentsMargins(0, 0, 0, 0)
+        content.setSpacing(0)
+        tabs = QWidget(objectName="tabStrip")
+        tab_row = QHBoxLayout(tabs)
+        tab_row.setContentsMargins(12, 4, 8, 0)
+        tab_row.setSpacing(4)
+        self.active_tab = QWidget(objectName="activeTab")
+        active = QHBoxLayout(self.active_tab)
+        active.setContentsMargins(12, 0, 3, 0)
+        self.tab_label = plain_label("No note open", objectName="tabLabel")
+        active.addWidget(self.tab_label, 1)
+        self.close_note_button = icon_button("close", "Close note", self.close_note)
+        active.addWidget(self.close_note_button)
+        self.active_tab.setFixedWidth(210)
+        tab_row.addWidget(self.active_tab)
+        tab_row.addWidget(icon_button("plus", "New note", lambda: self.create_entry(False)))
+        tab_row.addStretch()
+        tab_row.addWidget(icon_button("panel", "Toggle sidebar", self.toggle_sidebar))
+        tabs.setFixedHeight(40)
+        content.addWidget(tabs)
+        navigation = QWidget(objectName="noteHeader")
+        nav = QHBoxLayout(navigation)
+        nav.setContentsMargins(12, 4, 12, 4)
+        nav.setSpacing(4)
+        self.save_button = icon_button("save", "Save note", lambda: self.save_document(True))
+        nav.addWidget(self.save_button)
+        nav.addWidget(icon_button("search", "Find in note", self.show_find))
+        nav.addStretch(1)
+        self.note_label = plain_label("", objectName="breadcrumb")
+        self.note_label.setAccessibleName("Current note title")
+        nav.addWidget(self.note_label)
+        nav.addStretch(1)
+        self.mode_button = icon_button("book", "Toggle reading view", lambda: self.set_mode("read" if self.mode == "edit" else "edit"))
+        nav.addWidget(self.mode_button)
+        self.note_actions_button = icon_button("more", "Note actions")
+        menu = QMenu(self.note_actions_button)
+        group = QActionGroup(self)
+        self.edit_button = menu.addAction("Edit", lambda: self.set_mode("edit"))
+        self.read_button = menu.addAction("Read", lambda: self.set_mode("read"))
+        for action in (self.edit_button, self.read_button):
+            action.setCheckable(True)
+            group.addAction(action)
+        self.edit_button.setChecked(True)
+        menu.addSeparator()
+        self.bold_button = menu.addAction("Bold", lambda: self.format_source("**"))
+        self.italic_button = menu.addAction("Italic", lambda: self.format_source("*"))
+        menu.addSeparator()
+        self.undo_button = menu.addAction("Undo", self.undo)
+        self.redo_button = menu.addAction("Redo", self.redo)
+        menu.addSeparator()
+        self.find_button = menu.addAction("Find in note…", self.show_find)
+        menu.addAction("Save", lambda: self.save_document(True))
+        self.note_actions_button.setMenu(menu)
+        nav.addWidget(self.note_actions_button)
+        navigation.setFixedHeight(36)
+        content.addWidget(navigation)
         self.pages = QStackedWidget(objectName="canvas")
         empty = QWidget(objectName="canvas")
         area = QVBoxLayout(empty)
@@ -262,38 +388,12 @@ class MainWindow(QMainWindow):
         self.pages.addWidget(empty)
         note = QWidget(objectName="canvas")
         area = QVBoxLayout(note)
-        area.setContentsMargins(24, 24, 24, 20)
+        area.setContentsMargins(32, 32, 32, 16)
         area.setSpacing(12)
-        self.note_label = plain_label()
-        self.note_label.setWordWrap(True)
-        self.note_label.setAccessibleName("Current note path")
-        self.sidebar_layout.addWidget(self.note_label)
-        row = QHBoxLayout()
-        self.edit_button, self.read_button = QPushButton("Edit"), QPushButton("Read")
-        group = QButtonGroup(self)
-        for button in (self.edit_button, self.read_button):
-            button.setCheckable(True)
-            group.addButton(button)
-            row.addWidget(button)
-        self.edit_button.setChecked(True)
-        self.edit_button.clicked.connect(lambda: self.set_mode("edit"))
-        self.read_button.clicked.connect(lambda: self.set_mode("read"))
-        row.addStretch()
-        self.save_button = QPushButton("Save")
-        self.save_button.clicked.connect(lambda: self.save_document(True))
-        row.addWidget(self.save_button)
-        self.sidebar_layout.addLayout(row)
-        self.note_actions_button = QPushButton("Note actions…")
-        menu = QMenu(self.note_actions_button)
-        self.bold_button = menu.addAction("Bold", lambda: self.format_source("**"))
-        self.italic_button = menu.addAction("Italic", lambda: self.format_source("*"))
-        menu.addSeparator()
-        self.undo_button = menu.addAction("Undo", self.undo)
-        self.redo_button = menu.addAction("Redo", self.redo)
-        menu.addSeparator()
-        self.find_button = menu.addAction("Find in note…", self.show_find)
-        self.note_actions_button.setMenu(menu)
-        self.sidebar_layout.addWidget(self.note_actions_button)
+        self.note_surface = note
+        self.note_heading = plain_label("", objectName="noteHeading")
+        self.note_heading.setWordWrap(True)
+        area.addWidget(self.note_heading)
         self.notice = QFrame(objectName="notice")
         notice_area = QVBoxLayout(self.notice)
         self.notice_text = plain_label()
@@ -330,6 +430,7 @@ class MainWindow(QMainWindow):
         self.findbar.hide()
         self.views = QStackedWidget()
         self.editor = MarkdownEditor()
+        self.editor.setPlaceholderText("")
         self.editor.setFrameShape(QFrame.NoFrame)
         self.editor.textChanged.connect(self.text_changed)
         self.editor.undoAvailable.connect(self.undo_button.setEnabled)
@@ -343,11 +444,44 @@ class MainWindow(QMainWindow):
         self.views.addWidget(self.editor)
         self.views.addWidget(self.preview)
         area.addWidget(self.views, 1)
-        self.pages.addWidget(note)
-        self.splitter.addWidget(self.pages)
-        self.splitter.setSizes([300, 820])
+        note.setMaximumWidth(824)
+        note_page = QWidget(objectName="canvas")
+        centered = QHBoxLayout(note_page)
+        centered.setContentsMargins(0, 0, 0, 0)
+        centered.setSpacing(0)
+        centered.addStretch(1)
+        centered.addWidget(note, 10)
+        centered.addStretch(1)
+        self.pages.addWidget(note_page)
+        content.addWidget(self.pages, 1)
+        self.splitter.addWidget(self.content)
+        self.splitter.setSizes([292, 946])
+        self.splitter.setStretchFactor(0, 0)
+        self.splitter.setStretchFactor(1, 1)
         self.splitter.setCollapsible(0, False)
         self.splitter.setCollapsible(1, False)
+
+    def update_note_chrome(self):
+        title = PurePosixPath(self.active_path).stem if self.active_path else ""
+        self.note_heading.setText(title)
+        self.tab_label.setText(self.tab_label.fontMetrics().elidedText(title or "No note open", Qt.ElideRight, 150))
+        self.tab_label.setToolTip(self.active_path or "")
+        self.note_label.setText(self.note_label.fontMetrics().elidedText(title, Qt.ElideRight, 300))
+        self.note_label.setToolTip(self.active_path or "")
+        self.close_note_button.setEnabled(bool(self.document))
+        self.mode_button.setEnabled(bool(self.document))
+        self.save_button.setEnabled(bool(self.document))
+        self.note_actions_button.setEnabled(bool(self.document))
+
+    def close_note(self):
+        if not self.flush_pending():
+            return False
+        self.document, self.active_path = None, None
+        self._set_editor_text("")
+        self.update_note_chrome()
+        self.pages.setCurrentIndex(0)
+        self.save_state.setText("No note open")
+        return True
 
     def _build_shortcuts(self):
         actions = [
@@ -392,12 +526,13 @@ class MainWindow(QMainWindow):
         self._set_editor_text("")
         self.vault_label.setText(self.vault_path.name)
         self.vault_label.setToolTip(str(self.vault_path))
-        self.open_button.setText("Open another vault…")
+        self.open_button.setToolTip("Open another vault…")
+        self.open_button.setAccessibleName("Open another vault…")
         self.welcome_open.setText("Open another vault…")
         self.empty_title.setText("A fresh page awaits")
         self.empty_hint.setText("Choose a note, or create one in the selected folder.")
         self.pages.setCurrentIndex(0)
-        self.note_label.clear()
+        self.update_note_chrome()
         self.save_state.setText("No note open")
         self._enable_vault_controls(True)
         self.apply_tree(scan)
@@ -473,25 +608,21 @@ class MainWindow(QMainWindow):
         self.last_scan = scan
         expanded = {path for path, item in self.items.items() if item.isExpanded()}
         selected = self.selected_path()
-        had_tree = bool(self.items)
         self.tree.clear()
-        root = QTreeWidgetItem([self.vault.root.name])
+        root = self.tree.invisibleRootItem()
         root.setData(0, Qt.UserRole, ".")
         root.setData(0, Qt.UserRole + 1, True)
-        self.tree.addTopLevelItem(root)
         self.items = {".": root}
         for entry in scan.entries:
             path = PurePosixPath(entry.path)
-            item = QTreeWidgetItem(self.items.get(str(path.parent), root), [path.name])
+            item = QTreeWidgetItem(self.items.get(str(path.parent), root), [path.name if entry.folder else path.stem])
             item.setData(0, Qt.UserRole, entry.path)
             item.setData(0, Qt.UserRole + 1, entry.folder)
-            icon = self.style().StandardPixmap.SP_DirIcon if entry.folder else self.style().StandardPixmap.SP_FileIcon
-            item.setIcon(0, self.style().standardIcon(icon))
             item.setToolTip(0, entry.path)
             self.items[entry.path] = item
             if entry.path in expanded:
                 item.setExpanded(True)
-        root.setExpanded(not had_tree or "." in expanded)
+        root.setExpanded(True)
         if selected in self.items:
             self.tree.setCurrentItem(self.items[selected])
         if scan.warnings:
@@ -513,6 +644,9 @@ class MainWindow(QMainWindow):
     def select_path(self, path):
         if path in self.items:
             item = self.items[path]
+            if path == ".":
+                self.tree.setCurrentItem(None)
+                return
             ancestor = item.parent()
             while ancestor:
                 ancestor.setExpanded(True)
@@ -551,6 +685,9 @@ class MainWindow(QMainWindow):
 
     def focus_search(self):
         if self.vault:
+            self.sidebar.show()
+            self.search_container.show()
+            self.set_explorer_mode(True)
             self.search_text.setFocus()
             self.search_text.selectAll()
             if self.search_text.text():
@@ -656,7 +793,7 @@ class MainWindow(QMainWindow):
     def _adopt_document(self, document):
         self.document = document
         self.active_path = document.relative
-        self.note_label.setText(document.relative)
+        self.update_note_chrome()
         self.setWindowTitle(f"{PurePosixPath(document.relative).name} · Bluebell")
         self._set_editor_text(document.text)
         self.pages.setCurrentIndex(1)
@@ -810,6 +947,8 @@ class MainWindow(QMainWindow):
         if not self.document:
             return
         self.mode = mode
+        self.mode_button.setIcon(line_icon("edit" if mode == "read" else "book"))
+        self.mode_button.setToolTip("Switch to editing" if mode == "read" else "Switch to reading")
         self.edit_button.setChecked(mode == "edit")
         self.read_button.setChecked(mode == "read")
         self.views.setCurrentIndex(0 if mode == "edit" else 1)
@@ -903,7 +1042,7 @@ class MainWindow(QMainWindow):
             if self.active_path and (self.active_path == old or self.active_path.startswith(old + "/")):
                 self.active_path = new + self.active_path[len(old):]
                 self.document.relative = self.active_path
-                self.note_label.setText(self.active_path)
+                self.update_note_chrome()
             self.refresh_tree()
             self.select_path(new)
 
@@ -934,7 +1073,7 @@ class MainWindow(QMainWindow):
         if self.active_path and (self.active_path == relative or self.active_path.startswith(relative + "/")):
             self.document, self.active_path = None, None
             self._set_editor_text("")
-            self.note_label.clear()
+            self.update_note_chrome()
             self.pages.setCurrentIndex(0)
             self.save_state.setText("No note open")
         self.refresh_tree()

@@ -6,7 +6,7 @@ def test_empty_state_and_vault_chooser(qtbot, sandbox):
     qtbot.addWidget(window)
     window.show()
     assert window.isVisible()
-    assert window.open_button.text() == "Open vault…"
+    assert window.open_button.accessibleName() == "Open vault…"
     vault = sandbox / "Synthetic vault"
     vault.mkdir()
     (vault / "untouched.md").write_bytes(b"# Original\r\n")

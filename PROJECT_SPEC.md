@@ -11,6 +11,7 @@ Canonical repository: `/Users/max/Desktop/Second-Brain/Own Projects/Remnote-Obsi
 - Start with a macOS desktop app. Choose portable components so Windows and Linux versions can share the codebase; each platform still requires its own packaging and testing.
 - A vault is an ordinary local folder containing folders and Markdown text files.
 - Provide an Obsidian-style Markdown editor. Files remain readable and editable outside the app.
+- UI refinement, 1 October 2026: follow the supplied workspace screenshot with a compact icon rail/sidebar, slim active-note tab/header, bottom vault selector, filename heading and centered frameless writing column; retain the cream palette. Multiple tabs remain deferred.
 - First deliverable: a friendly desktop note-taking interface with baby-blue accents and darker warm cream surfaces (refined 1 October 2026). Vault folders and notes are real filesystem entries, created immediately from the app.
 - Support references between notes and a clickable graph showing their connections.
 - Generate question–answer flashcards from completed note bullets, with generation running in the background.

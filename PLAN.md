@@ -75,3 +75,12 @@ Implemented directly in the canonical checkout on the main branch, `master`. Ver
 User-requested refinement: darker cream canvas (`#E5DFD2`) and warm sidebar (`#DDD8CC`), preserving baby-blue selections and readable dark text. Editor, reading view, folder tree and search results have no surrounding frames. The right pane contains only the note surface; note path, Edit/Read, Save and a compact Note actions menu live in the sidebar. Removed visible font controls; zoom shortcuts and remembered size remain available. Conflict notices and in-note find appear only when needed.
 
 Folder clicks toggle across the chevron, icon, label and remaining row width. Parent collapse resets every descendant, including keyboard collapse; refresh preserves the collapsed state. Verified these behaviors with synthetic-vault interaction tests, the complete suite (87 passed, one optional native Trash test skipped), 20 native macOS interaction tests (including Cocoa chevron press/release), native Cocoa rendering at desktop/laptop sizes, and palette contrast checks. No personal vault was used for writes.
+
+
+### Reference screenshot workspace refinement — 1 October 2026
+
+Matched the supplied screenshot's layout within Milestone 1: 42 px icon rail, narrow resizable sidebar, compact icon-only explorer toolbar, 13 px tree text without file/folder icons or visible Markdown extensions, indentation guides, bottom vault selector, 40 px active-note tab strip, slim note header and a centered writing column capped at 824 px including padding. Retained the darker cream palette and baby-blue selections. Removed branding and large button rows; each icon has a tooltip and accessible name. Search appears on demand, sidebar hiding is reversible, the book icon toggles reading, and the menus expose the existing vault/note actions.
+
+One real note tab has a working Close action that flushes edits and respects cancellation. The filename title is display metadata, never inserted into Markdown. Full-row folder toggles and recursive collapse remain intact. Graphs, multi-tab editing and other later features were not implemented or represented as inactive placeholder controls.
+
+Verification: full offscreen suite **89 passed, 1 optional native Trash test skipped**; **23 native macOS UI interaction tests passed**; native synthetic-vault screenshots reviewed at wide and 860×600 layouts. Reference preview artifacts stay under ignored `work/`. Palette contrast checks pass. No personal vault was used for writes, and no push was performed.

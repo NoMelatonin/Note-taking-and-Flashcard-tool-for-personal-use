@@ -40,3 +40,8 @@ Follow-up checks cover italic/standard undo-redo shortcuts, modal-dialog cleanup
 - Input limits: regular UTF-8 Markdown, 8 MiB per note; local raster images 20 MiB and 24 million pixels. SVG is refused, including SVG disguised with a raster filename.
 - Autosave failures preserve the live buffer and block unresolved transitions. Pending buffers do not survive a forced process exit/crash. Ordinary mode bits/BOM/practical line endings are preserved; extended ACLs/ownership/Finder metadata are not specifically copied.
 - Task checkboxes are source-edited. Heading anchors, embeds, callouts, LaTeX and complex source link parsing remain later work. Graphs, AI, flashcards and distribution were not added.
+
+
+## Reference workspace refinement — 1 October 2026
+
+Verified the compact screenshot-inspired workspace natively on macOS. Full automated suite: 89 passed, one optional native Trash integration skipped. Native explorer/polish/window tests: 23 passed. Additional tests exercise hidden-sidebar search, returning to files, the filename/tab heading, closing with unsaved edits, cancelled close and the reading-mode icon. Wide and laptop synthetic screenshots are retained under ignored `work/reference-design.png` and `work/reference-laptop.png`. The app still edits exact Markdown source and supports one note at a time; the tab-shaped header does not imply multi-tab support. Cream colours remain the user's earlier preference.
