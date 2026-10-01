@@ -6,10 +6,12 @@ from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QApplication
 
 from bluebell.ui import MainWindow
+from bluebell.qt_runtime import prepare_qt_plugins
 from make_demo_vault import create_demo_vault
 
 root = Path(__file__).resolve().parents[1]
 (root / "work").mkdir(exist_ok=True)
+prepare_qt_plugins()
 app = QApplication([])
 window = MainWindow(restore=False)
 window.show()

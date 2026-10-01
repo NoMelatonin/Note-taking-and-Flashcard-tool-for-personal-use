@@ -5,6 +5,7 @@ from pathlib import Path
 from PySide6.QtWidgets import QApplication
 
 from bluebell.ui import MainWindow
+from bluebell.qt_runtime import prepare_qt_plugins
 
 
 def main() -> int:
@@ -12,6 +13,11 @@ def main() -> int:
     parser.add_argument("--vault", type=Path, help="Open an existing vault folder")
     parser.add_argument("--no-restore", action="store_true", help="Start at the vault chooser")
     args = parser.parse_args()
+    try:
+        prepare_qt_plugins()
+    except OSError as error:
+        print(f"Cannot prepare Qt plugins: {error}. Recreate .venv using README.md.", file=sys.stderr)
+        return 1
     app = QApplication(sys.argv[:1])
     app.setApplicationName("Bluebell")
     app.setOrganizationName("Bluebell Notes")

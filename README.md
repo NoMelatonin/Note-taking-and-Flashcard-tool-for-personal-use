@@ -24,6 +24,8 @@ Installation downloads dependencies once. The running app needs no account, AI s
 
 After setup, double-click **Launch.command** in Finder or run `./Launch.command`. This is a development launcher, not a packaged/signed Mac application. Use a terminal with normal macOS GUI access; the restricted Codex shell blocks Cocoa/clipboard services without a permitted native launch.
 
+On macOS, startup automatically clears copied Finder hidden flags within PySide6's Qt plugin directory before creating the window. Hidden plugin files can otherwise cause a misleading missing Cocoa plugin error even though `libqcocoa.dylib` is installed. This repair only touches installed Qt plugin metadata and does not change vault files, permissions or quarantine attributes.
+
 Try the isolated example:
 
 ```sh

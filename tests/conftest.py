@@ -6,6 +6,12 @@ from pathlib import Path
 
 import pytest
 
+from bluebell.qt_runtime import prepare_qt_plugins
+
+
+def pytest_sessionstart(session):
+    prepare_qt_plugins()
+
 
 @pytest.fixture
 def sandbox(monkeypatch):

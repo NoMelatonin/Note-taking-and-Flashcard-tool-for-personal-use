@@ -62,3 +62,9 @@ Verified from this folder: launcher CLI help, `pip check`, native Cocoa smoke la
 Reproduced `No module named bluebell`, then a missing Qt Cocoa plugin. The copied `.venv` contents carried macOS hidden flags: Python skipped the editable-install `.pth` file and Qt skipped platform plugins. Cleared those flags recursively inside `.venv`; dependencies and note files were unchanged. The launcher now prepends this checkout's `src/` to its import path so it does not depend on the copied editable-install path.
 
 Verified launcher CLI help, dependency consistency, and an actual native Cocoa smoke launch with synthetic demo/settings under ignored `work/`. Fresh offscreen suite: **79 passed, 1 optional native Trash test skipped**. Virtual environments should be recreated when moving to another machine. No user vault was used for write tests.
+
+### Persistent Cocoa startup repair — 1 October 2026
+
+The hidden plugin flags recurred; the earlier one-time environment repair was insufficient. Startup now removes only macOS Finder hidden flags from the installed Qt plugin tree before constructing QApplication. It refuses symlinks, preserves other flags and skips this operation on other platforms. The smoke tool and pytest initialization use the same preparation. Errors preparing plugins report a recoverable setup instruction.
+
+Implemented directly in the canonical checkout on the main branch, `master`. Verified native Cocoa smoke rendering, **81 passed / 1 optional native Trash test skipped**, and two consecutive native launcher starts after deliberately re-hiding the Cocoa plugin. Both starts automatically repaired the flag and remained running; verification windows were closed. All settings/vault verification used isolated synthetic data under ignored `work/`. No push performed.
