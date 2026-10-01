@@ -119,10 +119,10 @@ class SafePreview(QTextBrowser):
             body {{ color: #2C4252; font-size: {size}px; }}
             h1 {{ font-size: {round(size * 1.85)}px; }} h2 {{ font-size: {round(size * 1.45)}px; }} h3 {{ font-size: {round(size * 1.2)}px; }}
             a {{ color: #416881; text-decoration: underline; }}
-            pre {{ background-color: #E6EEF3; white-space: pre-wrap; font-family: "{fixed}"; }}
-            code {{ font-family: "{fixed}"; background-color: #E6EEF3; }}
+            pre {{ background-color: #DDD8CC; white-space: pre-wrap; font-family: "{fixed}"; }}
+            code {{ font-family: "{fixed}"; background-color: #DDD8CC; }}
             blockquote {{ color: #526979; margin-left: 20px; }}
-            table {{ border-collapse: collapse; }} th, td {{ padding: 8px; border: 1px solid #C7D4DD; }}
+            table {{ border-collapse: collapse; }} th, td {{ padding: 8px; border: 1px solid #C7C2B7; }}
         """)
 
     def show_markdown(self, source: str, vault, current: str):

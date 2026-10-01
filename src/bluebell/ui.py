@@ -4,7 +4,7 @@ from pathlib import Path, PurePosixPath
 from threading import Event
 from urllib.parse import unquote, urlsplit
 
-from PySide6.QtCore import Qt, QThreadPool, QTimer, QUrl
+from PySide6.QtCore import Qt, QThreadPool, QTimer, QUrl, QSignalBlocker
 from PySide6.QtGui import QDesktopServices, QKeySequence, QShortcut, QTextCursor, QTextDocument
 from PySide6.QtWidgets import (
     QButtonGroup, QDialog, QDialogButtonBox, QFileDialog, QFrame, QHBoxLayout,
@@ -26,6 +26,47 @@ def plain_label(text="", **kwargs):
     label = QLabel(text, **kwargs)
     label.setTextFormat(Qt.PlainText)
     return label
+
+
+class VaultTree(QTreeWidget):
+    """Folder rows toggle across their entire width, including the chevron."""
+    def __init__(self):
+        super().__init__()
+        self.setExpandsOnDoubleClick(False)
+        self.itemCollapsed.connect(self.collapse_descendants)
+
+    def mousePressEvent(self, event):
+        item = self.itemAt(event.position().toPoint())
+        if event.button() == Qt.LeftButton and item and item.data(0, Qt.UserRole + 1):
+            self.setFocus()
+            self.setCurrentItem(item)
+            item.setExpanded(not item.isExpanded())
+            event.accept()
+            return
+        super().mousePressEvent(event)
+
+    def mouseReleaseEvent(self, event):
+        item = self.itemAt(event.position().toPoint())
+        if event.button() == Qt.LeftButton and item and item.data(0, Qt.UserRole + 1):
+            # Cocoa's native branch handler otherwise toggles again on release.
+            event.accept()
+            return
+        super().mouseReleaseEvent(event)
+
+    def mouseDoubleClickEvent(self, event):
+        item = self.itemAt(event.position().toPoint())
+        if item and item.data(0, Qt.UserRole + 1):
+            event.accept()
+            return
+        super().mouseDoubleClickEvent(event)
+
+    def collapse_descendants(self, item):
+        with QSignalBlocker(self):
+            pending = [item.child(index) for index in range(item.childCount())]
+            while pending:
+                child = pending.pop()
+                child.setExpanded(False)
+                pending.extend(child.child(index) for index in range(child.childCount()))
 
 
 class NameDialog(QDialog):
@@ -128,8 +169,9 @@ class MainWindow(QMainWindow):
         sidebar = QWidget(objectName="sidebar")
         sidebar.setMinimumWidth(255)
         side = QVBoxLayout(sidebar)
-        side.setContentsMargins(18, 24, 18, 18)
-        side.setSpacing(12)
+        self.sidebar_layout = side
+        side.setContentsMargins(16, 20, 16, 16)
+        side.setSpacing(8)
         side.addWidget(plain_label("Bluebell", objectName="brand"))
         subtitle = plain_label("A little room for your thoughts", objectName="subtitle")
         subtitle.setWordWrap(True)
@@ -159,16 +201,18 @@ class MainWindow(QMainWindow):
         row.addWidget(self.new_note_button)
         row.addWidget(self.new_folder_button)
         side.addLayout(row)
-        self.tree = QTreeWidget()
+        self.tree = VaultTree()
+        self.tree.setFrameShape(QFrame.NoFrame)
         self.tree.setHeaderHidden(True)
         self.tree.setAccessibleName("Vault folders and Markdown notes")
         self.tree.itemClicked.connect(self.tree_clicked)
-        self.tree.itemActivated.connect(self.tree_clicked)
+        self.tree.itemActivated.connect(self.tree_activated)
         self.tree.setContextMenuPolicy(Qt.CustomContextMenu)
         self.tree.customContextMenuRequested.connect(self.tree_menu)
         self.explorer_views = QStackedWidget()
         self.explorer_views.addWidget(self.tree)
         self.search_results = QListWidget()
+        self.search_results.setFrameShape(QFrame.NoFrame)
         self.search_results.setAccessibleName("Vault search results")
         self.search_results.itemClicked.connect(self.open_search_result)
         self.search_results.itemActivated.connect(self.open_search_result)
@@ -223,7 +267,7 @@ class MainWindow(QMainWindow):
         self.note_label = plain_label()
         self.note_label.setWordWrap(True)
         self.note_label.setAccessibleName("Current note path")
-        area.addWidget(self.note_label)
+        self.sidebar_layout.addWidget(self.note_label)
         row = QHBoxLayout()
         self.edit_button, self.read_button = QPushButton("Edit"), QPushButton("Read")
         group = QButtonGroup(self)
@@ -235,32 +279,21 @@ class MainWindow(QMainWindow):
         self.edit_button.clicked.connect(lambda: self.set_mode("edit"))
         self.read_button.clicked.connect(lambda: self.set_mode("read"))
         row.addStretch()
-        self.zoom_out_button = QPushButton("A−")
-        self.zoom_out_button.setAccessibleName("Zoom out")
-        self.zoom_out_button.clicked.connect(lambda: self.zoom(-1))
-        self.zoom_in_button = QPushButton("A+")
-        self.zoom_in_button.setAccessibleName("Zoom in")
-        self.zoom_in_button.clicked.connect(lambda: self.zoom(1))
-        self.zoom_label = plain_label("100%", objectName="hint")
-        for widget in (self.zoom_out_button, self.zoom_label, self.zoom_in_button):
-            row.addWidget(widget)
         self.save_button = QPushButton("Save")
         self.save_button.clicked.connect(lambda: self.save_document(True))
         row.addWidget(self.save_button)
-        area.addLayout(row)
-        row = QHBoxLayout()
-        self.bold_button, self.italic_button = QPushButton("Bold"), QPushButton("Italic")
-        self.undo_button, self.redo_button = QPushButton("Undo"), QPushButton("Redo")
-        self.find_button = QPushButton("Find")
-        self.bold_button.clicked.connect(lambda: self.format_source("**"))
-        self.italic_button.clicked.connect(lambda: self.format_source("*"))
-        self.undo_button.clicked.connect(self.undo)
-        self.redo_button.clicked.connect(self.redo)
-        self.find_button.clicked.connect(self.show_find)
-        for button in (self.bold_button, self.italic_button, self.undo_button, self.redo_button, self.find_button):
-            row.addWidget(button)
-        row.addStretch()
-        area.addLayout(row)
+        self.sidebar_layout.addLayout(row)
+        self.note_actions_button = QPushButton("Note actions…")
+        menu = QMenu(self.note_actions_button)
+        self.bold_button = menu.addAction("Bold", lambda: self.format_source("**"))
+        self.italic_button = menu.addAction("Italic", lambda: self.format_source("*"))
+        menu.addSeparator()
+        self.undo_button = menu.addAction("Undo", self.undo)
+        self.redo_button = menu.addAction("Redo", self.redo)
+        menu.addSeparator()
+        self.find_button = menu.addAction("Find in note…", self.show_find)
+        self.note_actions_button.setMenu(menu)
+        self.sidebar_layout.addWidget(self.note_actions_button)
         self.notice = QFrame(objectName="notice")
         notice_area = QVBoxLayout(self.notice)
         self.notice_text = plain_label()
@@ -297,6 +330,7 @@ class MainWindow(QMainWindow):
         self.findbar.hide()
         self.views = QStackedWidget()
         self.editor = MarkdownEditor()
+        self.editor.setFrameShape(QFrame.NoFrame)
         self.editor.textChanged.connect(self.text_changed)
         self.editor.undoAvailable.connect(self.undo_button.setEnabled)
         self.editor.redoAvailable.connect(self.redo_button.setEnabled)
@@ -304,6 +338,7 @@ class MainWindow(QMainWindow):
         self.redo_button.setEnabled(False)
         self.editor.linkRequested.connect(self.source_link)
         self.preview = SafePreview()
+        self.preview.setFrameShape(QFrame.NoFrame)
         self.preview.anchorClicked.connect(self.preview_link)
         self.views.addWidget(self.editor)
         self.views.addWidget(self.preview)
@@ -393,9 +428,6 @@ class MainWindow(QMainWindow):
         self.editor.setStyleSheet(f"font-size: {self.font_size}px;")
         self.preview.setStyleSheet(f"font-size: {self.font_size}px;")
         self.preview.set_zoom(self.font_size)
-        self.zoom_label.setText(f"{round(self.font_size / 15 * 100)}%")
-        self.zoom_out_button.setEnabled(self.font_size > 11)
-        self.zoom_in_button.setEnabled(self.font_size < 26)
         if self.document and self.mode == "read":
             scroll = self.preview.verticalScrollBar().value()
             self._render()
@@ -441,6 +473,7 @@ class MainWindow(QMainWindow):
         self.last_scan = scan
         expanded = {path for path, item in self.items.items() if item.isExpanded()}
         selected = self.selected_path()
+        had_tree = bool(self.items)
         self.tree.clear()
         root = QTreeWidgetItem([self.vault.root.name])
         root.setData(0, Qt.UserRole, ".")
@@ -458,7 +491,7 @@ class MainWindow(QMainWindow):
             self.items[entry.path] = item
             if entry.path in expanded:
                 item.setExpanded(True)
-        root.setExpanded(True)
+        root.setExpanded(not had_tree or "." in expanded)
         if selected in self.items:
             self.tree.setCurrentItem(self.items[selected])
         if scan.warnings:
@@ -595,6 +628,12 @@ class MainWindow(QMainWindow):
     def tree_clicked(self, item, column=0):
         if not item.data(0, Qt.UserRole + 1):
             self.open_note(item.data(0, Qt.UserRole))
+
+    def tree_activated(self, item, column=0):
+        if item.data(0, Qt.UserRole + 1):
+            item.setExpanded(not item.isExpanded())
+        else:
+            self.tree_clicked(item, column)
 
     def open_note(self, relative):
         if relative == self.active_path:

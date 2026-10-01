@@ -1,6 +1,6 @@
 # Bluebell — local Markdown notes
 
-Milestone 1 is implemented: a native desktop notebook with baby-blue accents, dimmed-white surfaces, a real vault explorer, Markdown editing/reading, safe autosave, search and internal links. Graphs, AI and flashcards remain later milestones.
+Milestone 1 is implemented: a native desktop notebook with baby-blue accents, warm cream surfaces, a real vault explorer, Markdown editing/reading, safe autosave, search and internal links. Graphs, AI and flashcards remain later milestones.
 
 ## Setup and launch
 
@@ -37,8 +37,8 @@ The generator creates synthetic notes and an image under ignored `work/`. An exi
 
 ## Everyday workflow
 
-- Select a folder, then **New folder** or **New note** to create inside it. A selected note uses its parent; root/no selection uses the vault root. The name dialog shows the destination. Files/directories are created immediately; duplicate or unsafe names never overwrite existing entries.
-- Write ordinary Markdown in **Edit**, then choose **Read** for headings, formatting, lists, tasks, tables, quotes, code and local images. Source is never reformatted merely by opening it. **A− / A+** zoom the note; drag the divider to resize the sidebar.
+- Click anywhere on a folder row to expand/collapse it. Collapsing a parent also closes all nested folders. Select a folder, then **New folder** or **New note** to create inside it. A selected note uses its parent; root/no selection uses the vault root. The name dialog shows the destination. Files/directories are created immediately; duplicate or unsafe names never overwrite existing entries.
+- Write ordinary Markdown in **Edit**, then choose **Read** for headings, formatting, lists, tasks, tables, quotes, code and local images. Source is never reformatted merely by opening it. Zoom shortcuts adjust text size; drag the divider to resize the sidebar. Edit/Read, Save and Note actions live in the sidebar; the writing surface is frameless.
 - Autosave runs after 500 ms idle. **Save** and switching/closing flush pending edits. Status says **Saving**, **Saved**, **Unsaved** or **Save failed**. **Undo/Redo** apply to editor text, not filesystem operations.
 - **Rename** preserves content and warns that links may need updating. **Trash** confirms the item and folder contents, uses macOS Trash, and leaves the item intact when Trash fails. Non-Markdown files are preserved; dot-directories are hidden.
 - Search filenames and contents in **Search notes…**. Results show paths and context; current unsaved text is labelled. Clear search to return to the tree. Results are capped at 200; narrow the query when capped. Unreadable notes are reported as skipped.

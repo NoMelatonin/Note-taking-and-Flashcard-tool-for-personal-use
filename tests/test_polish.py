@@ -4,7 +4,7 @@ import stat
 
 from PySide6.QtCore import Qt, QUrl
 from PySide6.QtGui import QImage, QPalette, QTextCursor, QTextDocument
-from PySide6.QtWidgets import QFileDialog
+from PySide6.QtWidgets import QFileDialog, QFrame, QPushButton
 import pytest
 
 from bluebell.editor import MarkdownEditor
@@ -70,10 +70,10 @@ def test_zoom_resize_and_remembered_size(qtbot, window):
     window.splitter.setSizes([280, 580])
     assert window.editor.width() > 300
     assert window.new_note_button.isVisible() and window.save_button.isVisible()
-    assert window.search_text.palette().color(QPalette.PlaceholderText).name() == "#526979"
+    assert window.search_text.palette().color(QPalette.PlaceholderText).name() == "#496070"
     assert window.search_text.palette().color(QPalette.PlaceholderText).alpha() == 255
     original = window.font_size
-    qtbot.mouseClick(window.zoom_in_button, Qt.LeftButton)
+    window.zoom(1)
     assert window.font_size == original + 1
     assert load_settings()["font_size"] == original + 1
     window.set_mode("read")
@@ -81,6 +81,13 @@ def test_zoom_resize_and_remembered_size(qtbot, window):
     reopened = MainWindow(restore=False)
     qtbot.addWidget(reopened)
     assert reopened.font_size == window.font_size
+
+
+def test_writing_surface_and_explorer_are_frameless(window):
+    for widget in (window.editor, window.preview, window.tree, window.search_results):
+        assert widget.frameShape() == QFrame.NoFrame
+    assert not any(button.isVisible() for button in window.pages.findChildren(QPushButton))
+    assert not hasattr(window, "zoom_in_button")
 
 
 def test_chooser_button_cancellation_and_missing_restore(qtbot, sandbox, monkeypatch):

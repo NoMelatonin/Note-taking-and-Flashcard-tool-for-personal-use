@@ -63,17 +63,17 @@ The user opens a macOS desktop app, chooses one folder as a vault, creates folde
 
 ## 6. Friendly, low-glare visual design
 
-Use an original visual identity with muted baby blue and dimmed white. Avoid large pure-white backgrounds, neon accents, heavy shadows and distracting motion. This theme is an initial default and can be refined with the user after the first preview.
+Use an original visual identity with muted baby blue and warm cream surfaces. On 1 October 2026, the user refined the original dimmed-white default to darker cream, frameless writing/tree surfaces and sidebar note controls; visible font controls were removed. Avoid large pure-white backgrounds, neon accents, heavy shadows and distracting motion. This theme is an initial default and can be refined with the user after the first preview.
 
 | Role | Initial colour |
 | --- | --- |
-| Main background/editor | `#F1F3F4` |
-| Sidebar and secondary panels | `#E6EEF3` |
+| Main background/editor | `#E5DFD2` |
+| Sidebar and secondary panels | `#DDD8CC` |
 | Baby-blue selection/accent surface | `#D4E8F5` |
 | Primary controls and focus outline | `#416881` |
 | Main text | `#2C4252` |
-| Secondary text | `#526979` |
-| Quiet borders | `#C7D4DD` |
+| Secondary text | `#496070` |
+| Quiet borders | `#C7C2B7` |
 
 - Use clear labels, generous spacing, softly rounded controls and subtle hover/selection states. Pair icons with text labels or accessible names.
 - Use a comfortable system font for app controls and a readable monospace font for Markdown source. Start around 14–16 px and allow zoom.

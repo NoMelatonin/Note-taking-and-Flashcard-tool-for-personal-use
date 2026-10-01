@@ -68,3 +68,10 @@ Verified launcher CLI help, dependency consistency, and an actual native Cocoa s
 The hidden plugin flags recurred; the earlier one-time environment repair was insufficient. Startup now removes only macOS Finder hidden flags from the installed Qt plugin tree before constructing QApplication. It refuses symlinks, preserves other flags and skips this operation on other platforms. The smoke tool and pytest initialization use the same preparation. Errors preparing plugins report a recoverable setup instruction.
 
 Implemented directly in the canonical checkout on the main branch, `master`. Verified native Cocoa smoke rendering, **81 passed / 1 optional native Trash test skipped**, and two consecutive native launcher starts after deliberately re-hiding the Cocoa plugin. Both starts automatically repaired the flag and remained running; verification windows were closed. All settings/vault verification used isolated synthetic data under ignored `work/`. No push performed.
+
+
+### Cream, frameless interface refinement — 1 October 2026
+
+User-requested refinement: darker cream canvas (`#E5DFD2`) and warm sidebar (`#DDD8CC`), preserving baby-blue selections and readable dark text. Editor, reading view, folder tree and search results have no surrounding frames. The right pane contains only the note surface; note path, Edit/Read, Save and a compact Note actions menu live in the sidebar. Removed visible font controls; zoom shortcuts and remembered size remain available. Conflict notices and in-note find appear only when needed.
+
+Folder clicks toggle across the chevron, icon, label and remaining row width. Parent collapse resets every descendant, including keyboard collapse; refresh preserves the collapsed state. Verified these behaviors with synthetic-vault interaction tests, the complete suite (87 passed, one optional native Trash test skipped), 20 native macOS interaction tests (including Cocoa chevron press/release), native Cocoa rendering at desktop/laptop sizes, and palette contrast checks. No personal vault was used for writes.

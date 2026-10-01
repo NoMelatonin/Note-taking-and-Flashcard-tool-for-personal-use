@@ -14,10 +14,10 @@ def contrast(first, second):
 
 if __name__ == "__main__":
     for name, foreground, background, minimum in (
-        ("Main text", "#2C4252", "#F1F3F4", 4.5),
-        ("Secondary sidebar text", "#526979", "#E6EEF3", 4.5),
+        ("Main text", "#2C4252", "#E5DFD2", 4.5),
+        ("Secondary sidebar text", "#496070", "#DDD8CC", 4.5),
         ("Selected text", "#2C4252", "#D4E8F5", 4.5),
-        ("Primary button", "#F1F3F4", "#416881", 4.5),
+        ("Primary button", "#EFE9DD", "#416881", 4.5),
         ("Focus outline", "#416881", "#D4E8F5", 3.0),
     ):
         ratio = contrast(foreground, background)
