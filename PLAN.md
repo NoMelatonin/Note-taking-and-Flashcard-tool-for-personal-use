@@ -50,3 +50,9 @@ Each checkpoint stages only related project files. No credentials, personal vaul
 - Editable source-linked flashcards and spaced repetition.
 - Local background AI generation.
 - Packaged macOS release, then Windows/Linux builds and testing.
+
+## Desktop checkout — 1 October 2026
+
+The completed implementation is now available in the canonical project folder `/Users/max/Desktop/Second-Brain/Own Projects/Remnote-Obsidian rebuild`, on local branch `codex/milestone-1-desktop`. App source and launcher match the verified milestone; the relocated `.venv` imports this checkout. Earlier docs were backed up under ignored `.local/desktop-copy-originals-2026-10-01/` and in a local Git stash.
+
+Verified from this folder: launcher CLI help, `pip check`, native Cocoa smoke launch, and the default native suite (**79 passed, 1 optional Trash test skipped**). Demo files and settings were copied; no user vault was used for write tests. Open this folder in VS Code and run `./Launch.command`. No push was performed.

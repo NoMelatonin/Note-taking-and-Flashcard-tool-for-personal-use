@@ -4,7 +4,15 @@ Milestone 1 is implemented: a native desktop notebook with baby-blue accents, di
 
 ## Setup and launch
 
-Run from this repository's implementation worktree. Requires Python 3.11–3.14; verified on **Python 3.14.5, PySide6 6.11.2, macOS 26.5.2, Apple Silicon**. The pinned Qt wheels require macOS 13 or later; older Macs and other Python versions in the supported range have not been tested.
+Run from the project folder below; open this same folder in VS Code:
+
+```text
+/Users/max/Desktop/Second-Brain/Own Projects/Remnote-Obsidian rebuild
+```
+
+The copied `.venv` is ready; run `./Launch.command`. The setup commands below are only needed for a fresh environment.
+
+Requires Python 3.11–3.14; verified on **Python 3.14.5, PySide6 6.11.2, macOS 26.5.2, Apple Silicon**. The pinned Qt wheels require macOS 13 or later; older Macs and other Python versions in the supported range have not been tested.
 
 ```sh
 python3 -m venv .venv
@@ -97,4 +105,4 @@ Renderer/Trash API references: [Qt QTextBrowser](https://doc.qt.io/qtforpython-6
 
 Inline Live Preview, heading/block anchors, complex source modifier-click parsing, SVG/remote images, LaTeX, callouts, embeds, clipboard attachments, backlinks/graph, AI, flashcards, cloud sync, plugins and public distribution remain outside Milestone 1. Task checkboxes render but are edited in source.
 
-This implementation lives on local branch `codex/milestone-1` in a managed worktree of the repository. The original checkout and its untracked personal files were left untouched; no GitHub push was performed. Requirements: [PROJECT_SPEC.md](PROJECT_SPEC.md), [docs/MILESTONE_1.md](docs/MILESTONE_1.md), [AGENTS.md](AGENTS.md).
+On 1 October 2026, the verified implementation was copied into the canonical desktop checkout above, on local branch `codex/milestone-1-desktop`. The app code and launcher are unchanged. Its own `.venv`, demo and settings are ready to use; imports resolve to this folder. Earlier desktop docs are preserved in ignored `.local/desktop-copy-originals-2026-10-01/` and a local Git stash. The managed worktree remains available; no GitHub push was performed. Requirements: [PROJECT_SPEC.md](PROJECT_SPEC.md), [docs/MILESTONE_1.md](docs/MILESTONE_1.md), [AGENTS.md](AGENTS.md).
