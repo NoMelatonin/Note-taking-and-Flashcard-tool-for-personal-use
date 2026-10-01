@@ -70,7 +70,7 @@ def test_zoom_resize_and_remembered_size(qtbot, window):
     window.splitter.setSizes([280, 580])
     assert window.editor.width() > 300
     assert window.new_note_button.isVisible() and window.save_button.isVisible()
-    assert window.search_text.palette().color(QPalette.PlaceholderText).name() == "#496070"
+    assert window.search_text.palette().color(QPalette.PlaceholderText).name() == "#666666"
     assert window.search_text.palette().color(QPalette.PlaceholderText).alpha() == 255
     original = window.font_size
     window.zoom(1)

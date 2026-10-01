@@ -84,3 +84,10 @@ Matched the supplied screenshot's layout within Milestone 1: 42 px icon rail, na
 One real note tab has a working Close action that flushes edits and respects cancellation. The filename title is display metadata, never inserted into Markdown. Full-row folder toggles and recursive collapse remain intact. Graphs, multi-tab editing and other later features were not implemented or represented as inactive placeholder controls.
 
 Verification: full offscreen suite **89 passed, 1 optional native Trash test skipped**; **23 native macOS UI interaction tests passed**; native synthetic-vault screenshots reviewed at wide and 860×600 layouts. Reference preview artifacts stay under ignored `work/`. Palette contrast checks pass. No personal vault was used for writes, and no push was performed.
+
+
+### Reference screenshot colour match — 1 October 2026
+
+The user explicitly requested matching the screenshot colours as well, superseding the earlier cream/blue default. Applied white (`#FFFFFF`) to the canvas/editor, light gray (`#F6F6F6`) to the sidebar, near-white (`#FAFAFA`) to the tab strip, charcoal (`#2E2E2E`) to text, neutral gray to icons/guides/selections, and pale lavender (`#EDE6FD`) to editor text selections. Reading-view code/quote/link colours use the same light-theme family.
+
+Verified native wide/laptop reference previews with the isolated synthetic vault, focused polish/rendering/window tests, and six contrast checks (text at least 5.31:1; focus outline 3.83:1). Updated current requirements and README. Historical cream refinements above remain a record of the earlier choices.

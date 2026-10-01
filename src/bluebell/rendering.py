@@ -95,7 +95,7 @@ class MarkdownRenderer:
             if PurePosixPath(relative).suffix.lower() not in RASTER_TYPES:
                 raise VaultError("Only local raster images are supported.")
         except (OSError, ValueError):
-            return '<span style="color: #526979">[' + html.escape(description) + " · image unavailable or blocked]</span>"
+            return '<span style="color: #666666">[' + html.escape(description) + " · image unavailable or blocked]</span>"
         return '<img src="vault-image:' + quote(relative, safe="") + '" alt="' + html.escape(description, quote=True) + '" />'
 
     def render(self, source: str, vault, current: str) -> str:
@@ -116,13 +116,13 @@ class SafePreview(QTextBrowser):
     def set_zoom(self, size):
         fixed = QFontDatabase.systemFont(QFontDatabase.FixedFont).family().replace('"', '')
         self.document().setDefaultStyleSheet(f"""
-            body {{ color: #2C4252; font-size: {size}px; }}
+            body {{ color: #2E2E2E; font-size: {size}px; }}
             h1 {{ font-size: {round(size * 1.85)}px; }} h2 {{ font-size: {round(size * 1.45)}px; }} h3 {{ font-size: {round(size * 1.2)}px; }}
-            a {{ color: #416881; text-decoration: underline; }}
-            pre {{ background-color: #DDD8CC; white-space: pre-wrap; font-family: "{fixed}"; }}
-            code {{ font-family: "{fixed}"; background-color: #DDD8CC; }}
-            blockquote {{ color: #526979; margin-left: 20px; }}
-            table {{ border-collapse: collapse; }} th, td {{ padding: 8px; border: 1px solid #C7C2B7; }}
+            a {{ color: #7054A3; text-decoration: underline; }}
+            pre {{ background-color: #F2F2F2; white-space: pre-wrap; font-family: "{fixed}"; }}
+            code {{ font-family: "{fixed}"; background-color: #F2F2F2; }}
+            blockquote {{ color: #666666; margin-left: 20px; }}
+            table {{ border-collapse: collapse; }} th, td {{ padding: 8px; border: 1px solid #DDDDDD; }}
         """)
 
     def show_markdown(self, source: str, vault, current: str):

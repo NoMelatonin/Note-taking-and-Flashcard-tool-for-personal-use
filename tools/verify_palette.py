@@ -14,11 +14,12 @@ def contrast(first, second):
 
 if __name__ == "__main__":
     for name, foreground, background, minimum in (
-        ("Main text", "#2C4252", "#E5DFD2", 4.5),
-        ("Secondary sidebar text", "#496070", "#DDD8CC", 4.5),
-        ("Selected text", "#2C4252", "#D4E8F5", 4.5),
-        ("Primary button", "#EFE9DD", "#416881", 4.5),
-        ("Focus outline", "#416881", "#D4E8F5", 3.0),
+        ("Main text", "#2E2E2E", "#FFFFFF", 4.5),
+        ("Secondary sidebar text", "#666666", "#F6F6F6", 4.5),
+        ("Selected text", "#2E2E2E", "#E7E7E7", 4.5),
+        ("Editor selection", "#2E2E2E", "#EDE6FD", 4.5),
+        ("Primary button", "#FFFFFF", "#555555", 4.5),
+        ("Focus outline", "#737373", "#E7E7E7", 3.0),
     ):
         ratio = contrast(foreground, background)
         assert ratio >= minimum, f"{name}: {ratio:.2f} below {minimum}"

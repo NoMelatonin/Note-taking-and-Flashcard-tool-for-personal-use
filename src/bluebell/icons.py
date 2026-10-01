@@ -26,7 +26,7 @@ PATHS = {
 
 def line_icon(name: str) -> QIcon:
     svg = ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" '
-           'fill="none" stroke="#626B68" stroke-width="1.6" '
+           'fill="none" stroke="#7A7A7A" stroke-width="1.6" '
            'stroke-linecap="round" stroke-linejoin="round">' + PATHS[name] + '</svg>')
     pixmap = QPixmap(40, 40)
     pixmap.fill(Qt.transparent)

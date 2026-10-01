@@ -63,21 +63,24 @@ The user opens a macOS desktop app, chooses one folder as a vault, creates folde
 
 ## 6. Friendly, low-glare visual design
 
-Use an original visual identity with muted baby blue and warm cream surfaces. On 1 October 2026, the user refined the original dimmed-white default to darker cream, frameless writing/tree surfaces and sidebar note controls; visible font controls were removed. The subsequent screenshot refinement uses compact icon controls with tooltips, a bottom vault selector, one active-note tab, a slim note header and a centered text column. Avoid large pure-white backgrounds, neon accents, heavy shadows and distracting motion. This theme is an initial default and can be refined with the user after the first preview.
+The user's latest refinement on 1 October 2026 replaces the earlier blue/cream palette with the supplied screenshot's light theme. Keep the compact icon controls, frameless surfaces, bottom vault selector, one active-note tab, slim header and centered text column. Avoid neon accents, heavy shadows and distracting motion.
 
-| Role | Initial colour |
+| Role | Current colour |
 | --- | --- |
-| Main background/editor | `#E5DFD2` |
-| Sidebar and secondary panels | `#DDD8CC` |
-| Baby-blue selection/accent surface | `#D4E8F5` |
-| Primary controls and focus outline | `#416881` |
-| Main text | `#2C4252` |
-| Secondary text | `#496070` |
-| Quiet borders | `#C7C2B7` |
+| Main background/editor | `#FFFFFF` |
+| Sidebar and secondary panels | `#F6F6F6` |
+| Tab strip | `#FAFAFA` |
+| File selection | `#E7E7E7` |
+| Editor text selection | `#EDE6FD` |
+| Focus outline | `#737373` |
+| Main text | `#2E2E2E` |
+| Secondary text | `#666666` |
+| Quiet separators / tree guides | `#E5E5E5` / `#DDDDDD` |
+
 
 - Use clear labels, generous spacing, softly rounded controls and subtle hover/selection states. Pair icons with text labels or accessible names.
 - Use a comfortable system font for app controls and a readable monospace font for Markdown source. Start around 14–16 px and allow zoom.
-- Keep text and focus states legible against the muted surfaces; do not use pale blue for body text. Verify contrast and keyboard usability during implementation.
+- Keep text and focus states legible against the muted surfaces; do not use pale colours for body text. Verify contrast and keyboard usability during implementation.
 - Resizable sidebar and main area; the first screen should remain usable on a typical laptop. Save/error status must use text, not colour alone.
 - Empty states explain the next action: choose a vault, select a note or create the first note.
 

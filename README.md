@@ -1,6 +1,6 @@
 # Bluebell — local Markdown notes
 
-Milestone 1 is implemented: a native desktop notebook with baby-blue accents, warm cream surfaces, a real vault explorer, Markdown editing/reading, safe autosave, search and internal links. Graphs, AI and flashcards remain later milestones.
+Milestone 1 is implemented: a native desktop notebook with a white canvas, light-gray workspace chrome, a real vault explorer, Markdown editing/reading, safe autosave, search and internal links. Graphs, AI and flashcards remain later milestones.
 
 ## Setup and launch
 
@@ -39,7 +39,7 @@ The generator creates synthetic notes and an image under ignored `work/`. An exi
 
 The workspace follows the supplied reference: a narrow icon rail, compact folder tree with indentation guides, bottom vault selector, a single active-note tab, slim note header and centered writing column. Controls have accessible names and hover tooltips. The sidebar's folder/search icons switch between browsing and search; the panel icon hides or restores the sidebar. New note/folder and Collapse all are in the small explorer toolbar. The top-right book icon switches Edit/Read; the adjacent menu contains formatting, undo/redo, Find and Save. Closing the note tab flushes pending edits and can be cancelled if a save cannot be resolved.
 
-Note labels omit the `.md` extension; tooltips retain the actual path. The large title comes from the filename and does not add or rewrite any Markdown. Multiple tabs and graph controls remain later work. Cream backgrounds and baby-blue selection accents are retained from the earlier refinement.
+Note labels omit the `.md` extension; tooltips retain the actual path. The large title comes from the filename and does not add or rewrite any Markdown. Multiple tabs and graph controls remain later work. Colours now match the reference: white canvas, light-gray sidebar/chrome, charcoal text, gray file selections and pale lavender text selections.
 
 - Click anywhere on a folder row to expand/collapse it. Collapsing a parent also closes all nested folders. Select a folder, then **New folder** or **New note** to create inside it. A selected note uses its parent; root/no selection uses the vault root. The name dialog shows the destination. Files/directories are created immediately; duplicate or unsafe names never overwrite existing entries.
 - Write ordinary Markdown in **Edit**, then choose **Read** for headings, formatting, lists, tasks, tables, quotes, code and local images. Source is never reformatted merely by opening it. Zoom shortcuts adjust text size; drag the divider to resize the sidebar. The compact header provides Save, Find, reading-mode and Note actions icons; the writing surface is frameless.

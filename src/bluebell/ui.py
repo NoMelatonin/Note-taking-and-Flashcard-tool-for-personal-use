@@ -72,7 +72,7 @@ class VaultTree(QTreeWidget):
     def drawBranches(self, painter, rect, index):
         super().drawBranches(painter, rect, index)
         painter.save()
-        painter.setPen(QColor("#C7C2B7"))
+        painter.setPen(QColor("#DDDDDD"))
         ancestor = index.parent()
         while ancestor.isValid():
             x = self.visualRect(ancestor).left() - self.indentation() // 2
