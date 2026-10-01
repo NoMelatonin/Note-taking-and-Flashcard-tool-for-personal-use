@@ -56,3 +56,9 @@ Each checkpoint stages only related project files. No credentials, personal vaul
 The completed implementation is now available in the canonical project folder `/Users/max/Desktop/Second-Brain/Own Projects/Remnote-Obsidian rebuild`, on local branch `codex/milestone-1-desktop`. App source and launcher match the verified milestone; the relocated `.venv` imports this checkout. Earlier docs were backed up under ignored `.local/desktop-copy-originals-2026-10-01/` and in a local Git stash.
 
 Verified from this folder: launcher CLI help, `pip check`, native Cocoa smoke launch, and the default native suite (**79 passed, 1 optional Trash test skipped**). Demo files and settings were copied; no user vault was used for write tests. Open this folder in VS Code and run `./Launch.command`. No push was performed.
+
+### Desktop startup repair — 1 October 2026
+
+Reproduced `No module named bluebell`, then a missing Qt Cocoa plugin. The copied `.venv` contents carried macOS hidden flags: Python skipped the editable-install `.pth` file and Qt skipped platform plugins. Cleared those flags recursively inside `.venv`; dependencies and note files were unchanged. The launcher now prepends this checkout's `src/` to its import path so it does not depend on the copied editable-install path.
+
+Verified launcher CLI help, dependency consistency, and an actual native Cocoa smoke launch with synthetic demo/settings under ignored `work/`. Fresh offscreen suite: **79 passed, 1 optional native Trash test skipped**. Virtual environments should be recreated when moving to another machine. No user vault was used for write tests.

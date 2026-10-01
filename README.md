@@ -10,7 +10,7 @@ Run from the project folder below; open this same folder in VS Code:
 /Users/max/Desktop/Second-Brain/Own Projects/Remnote-Obsidian rebuild
 ```
 
-The copied `.venv` is ready; run `./Launch.command`. The setup commands below are only needed for a fresh environment.
+The local `.venv` is ready; run `./Launch.command`. The launcher loads the source from its own project folder. The setup commands below are only needed for a fresh environment. Virtual environments are machine-specific: recreate `.venv` when copying the project to another computer.
 
 Requires Python 3.11–3.14; verified on **Python 3.14.5, PySide6 6.11.2, macOS 26.5.2, Apple Silicon**. The pinned Qt wheels require macOS 13 or later; older Macs and other Python versions in the supported range have not been tested.
 
@@ -105,4 +105,4 @@ Renderer/Trash API references: [Qt QTextBrowser](https://doc.qt.io/qtforpython-6
 
 Inline Live Preview, heading/block anchors, complex source modifier-click parsing, SVG/remote images, LaTeX, callouts, embeds, clipboard attachments, backlinks/graph, AI, flashcards, cloud sync, plugins and public distribution remain outside Milestone 1. Task checkboxes render but are edited in source.
 
-On 1 October 2026, the verified implementation was copied into the canonical desktop checkout above, on local branch `codex/milestone-1-desktop`. The app code and launcher are unchanged. Its own `.venv`, demo and settings are ready to use; imports resolve to this folder. Earlier desktop docs are preserved in ignored `.local/desktop-copy-originals-2026-10-01/` and a local Git stash. The managed worktree remains available; no GitHub push was performed. Requirements: [PROJECT_SPEC.md](PROJECT_SPEC.md), [docs/MILESTONE_1.md](docs/MILESTONE_1.md), [AGENTS.md](AGENTS.md).
+On 1 October 2026, the implementation was copied into the canonical desktop checkout above, on local branch `codex/milestone-1-desktop`. A later startup repair cleared recursively copied macOS hidden flags inside `.venv`: Python 3.14 had skipped the editable-install path file (`No module named bluebell`), and Qt could not discover its Cocoa plugin. The launcher now also loads this folder's `src/` directly. If another copy exhibits these same errors, run `chflags -R nohidden .venv` from the project folder. Earlier desktop docs are preserved in ignored `.local/desktop-copy-originals-2026-10-01/` and a local Git stash. The managed worktree remains available; no GitHub push was performed. Requirements: [PROJECT_SPEC.md](PROJECT_SPEC.md), [docs/MILESTONE_1.md](docs/MILESTONE_1.md), [AGENTS.md](AGENTS.md).
